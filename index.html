@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>grithoni · 项目展示</title>
-<meta name="description" content="调解、中立评估、争议评审、仲裁四套智能辅助解纷系统，以及错题升级学习应用 HiStudy。">
+<meta name="description" content="调解、中立评估、争议评审、仲裁四套智能辅助解纷系统。">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -93,17 +93,6 @@
   .status.soon::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
   .status.live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #3fae72; }
 
-  .other { display: grid; grid-template-columns: 1fr 1.3fr; gap: 0; background: var(--ink); color: #e9e7e2; border-radius: 6px; overflow: hidden; }
-  .other .l { padding: 34px 32px; }
-  .other .code { font-family: var(--mono); font-size: 13px; color: #8d8d8d; }
-  .other h3 { font-family: var(--serif); font-size: 26px; color: #fff; margin: 6px 0 12px; }
-  .other p { margin: 0; color: #b5b2ab; font-size: 15px; }
-  .other .status.soon { color: #8d8d8d; }
-  .other .status.soon::before { background: #555; }
-  .loop { padding: 30px 32px; border-left: 1px solid #333; display: flex; flex-wrap: wrap; gap: 8px; align-content: center; }
-  .loop span { font-size: 13px; padding: 5px 12px; border: 1px solid #444; border-radius: 999px; color: #d9d6cf; }
-  .loop i { font-style: normal; color: #6d6b67; align-self: center; }
-
   footer { padding: 40px 0 56px; margin-top: 40px; border-top: 1px solid var(--line); font-size: 13px; color: var(--faint); }
   footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
 
@@ -121,8 +110,6 @@
   @media (max-width: 960px) {
     .spectrum { grid-template-columns: 1fr 1fr; }
     .sec-head { grid-template-columns: 1fr; gap: 12px; }
-    .other { grid-template-columns: 1fr; }
-    .loop { border-left: 0; border-top: 1px solid #333; }
   }
   @media (max-width: 600px) {
     .wrap { padding: 0 16px; }
@@ -131,7 +118,6 @@
     section { padding: 48px 0; }
     .spectrum { grid-template-columns: 1fr; }
     .proj { min-height: 0; }
-    .other .l, .loop { padding: 26px 22px; }
   }
 </style>
 </head>
@@ -144,7 +130,6 @@
     </a>
     <nav aria-label="页面导航">
       <a href="#resolve">解纷系统</a>
-      <a href="#learn">学习应用</a>
     </nav>
   </div>
 </header>
@@ -152,9 +137,9 @@
 <main>
   <section class="hero">
     <div class="wrap">
-      <div class="eyebrow">PROJECTS · ONLINE DISPUTE RESOLUTION &amp; LEARNING</div>
+      <div class="eyebrow">PROJECTS · ONLINE DISPUTE RESOLUTION</div>
       <h1>四种解纷方式，<br>一样的做法：<em>人来决定</em></h1>
-      <p class="lede">调解、中立评估、争议评审、仲裁，各做了一套智能辅助系统；另有一个把错题变成升级任务的学习应用。</p>
+      <p class="lede">调解、中立评估、争议评审、仲裁，各做了一套智能辅助系统。</p>
       <div class="creed" aria-label="共同的做法">
         <span><b>01</b>AI 起草与分析</span>
         <span><b>02</b>程序计算与校验</span>
@@ -166,7 +151,7 @@
   <section id="resolve">
     <div class="wrap">
       <div class="sec-head reveal">
-        <div class="sec-no">01 / 解纷系统</div>
+        <div class="sec-no">解纷系统</div>
         <div>
           <h2>从双方自己商定，到第三方作出裁决</h2>
           <p>四套系统按第三方的作用由弱到强排列。越靠前，结果越取决于双方的意愿；越靠后，越接近一锤定音。</p>
@@ -210,28 +195,6 @@
     </div>
   </section>
 
-  <section id="learn">
-    <div class="wrap">
-      <div class="sec-head reveal">
-        <div class="sec-no">02 / 学习应用</div>
-        <div>
-          <h2>把错题变成升级任务</h2>
-          <p>同样的思路用在学习上：AI 诊断和辅导，复习节奏由算法安排。</p>
-        </div>
-      </div>
-      <div class="other reveal">
-        <div class="l">
-          <span class="code">HiStudy</span>
-          <h3>Hi-school 打怪升级</h3>
-          <p>上传试卷，识别题目，诊断错因，再按层次辅导、出变式练习，按间隔复习巩固，最后生成学情报告。</p>
-          <span class="status soon">展示页筹备中</span>
-        </div>
-        <div class="loop" aria-label="学习流程">
-          <span>上传试卷</span><i>→</i><span>OCR 识别</span><i>→</i><span>AI 诊断错因</span><i>→</i><span>四层辅导</span><i>→</i><span>变式练习</span><i>→</i><span>SM-2 间隔复习</span><i>→</i><span>学情报告</span>
-        </div>
-      </div>
-    </div>
-  </section>
 </main>
 
 <footer>
