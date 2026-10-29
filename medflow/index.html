@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>调解智能辅助系统 · 解决争议 创造价值</title>
+<meta name="description" content="调解智能辅助系统：按 V·A·L·U·E 五个阶段、15 个环节辅助调解员工作，帮助双方找到都能接受、各有所得的方案。案件内容在本机脱敏后才发给大模型。">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* 与系统界面同一套颜色：左灰蓝、右品牌青代表双方，交叠处陶土橙是共同区域 */
+    --left: #738ca5;
+    --right: #2cc1d1;
+    --overlap: #e98a68;
+    --cyan-deep: #0a7a89;
+    --cyan-light: #daf0f4;
+    --ink: #141414;
+    --text: #262626;
+    --muted: #5c5c5c;
+    --faint: #8a8a8a;
+    --paper: #fbfaf7;
+    --card: #ffffff;
+    --line: #e7e4dd;
+    --serif: "Noto Serif SC", "Songti SC", "STSong", serif;
+    --sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+    --wrap: 1120px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--text);
+    font: 16px/1.8 var(--sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  /* 纸面颗粒 */
+  body::before {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .35;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  main, header, footer { position: relative; z-index: 1; }
+  a { color: var(--cyan-deep); }
+  .wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 24px; }
+  .mono { font-family: var(--mono); letter-spacing: .04em; }
+
+  /* ── 顶栏 ── */
+  .top {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(251, 250, 247, .86);
+    backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid transparent;
+    transition: border-color .3s;
+  }
+  .top.scrolled { border-bottom-color: var(--line); }
+  .top .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-weight: 700; }
+  .brand-name {
+    background: linear-gradient(90deg, var(--left), var(--overlap) 55%, var(--right));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .nav { display: flex; gap: 26px; font-size: 14px; }
+  .nav a { color: var(--muted); text-decoration: none; }
+  .nav a:hover { color: var(--ink); }
+
+  /* ── 首屏 ── */
+  .hero { padding: 72px 0 96px; }
+  .hero .wrap { display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; }
+  .eyebrow { font-size: 13px; color: var(--cyan-deep); font-weight: 500; letter-spacing: .18em; }
+  h1 {
+    font-family: var(--serif); font-weight: 900; color: var(--ink);
+    font-size: clamp(42px, 6.4vw, 78px); line-height: 1.12; margin: 18px 0 22px; letter-spacing: .02em;
+  }
+  h1 .dot { color: var(--overlap); padding: 0 .08em; }
+  .lede { font-size: 18px; color: var(--muted); max-width: 30em; margin: 0 0 34px; }
+  .cta { display: flex; gap: 14px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 999px;
+    font-size: 15px; font-weight: 500; text-decoration: none; transition: transform .2s, background .2s, box-shadow .2s;
+  }
+  .btn-ink { background: var(--ink); color: #fff; }
+  .btn-ink:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -12px rgba(0,0,0,.5); }
+  .btn-line { border: 1px solid var(--line); color: var(--ink); background: var(--card); }
+  .btn-line:hover { border-color: var(--ink); }
+
+  .venn { position: relative; width: 100%; max-width: 480px; justify-self: end; }
+  .venn svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .venn .lobe-l { animation: drift-l 1.4s cubic-bezier(.2,.8,.2,1) both .2s; }
+  .venn .lobe-r { animation: drift-r 1.4s cubic-bezier(.2,.8,.2,1) both .2s; }
+  .venn .core { animation: bloom 1s ease both 1.2s; transform-origin: 240px 200px; }
+  .venn .tag { animation: fade 1s ease both 1.7s; }
+  @keyframes drift-l { from { transform: translateX(-60px); opacity: 0; } }
+  @keyframes drift-r { from { transform: translateX(60px); opacity: 0; } }
+  @keyframes bloom { from { opacity: 0; transform: scale(.6); } }
+  @keyframes fade { from { opacity: 0; } }
+  .venn-caption { text-align: center; font-size: 13px; color: var(--faint); margin-top: 6px; }
+
+  /* ── 通用小节 ── */
+  section { padding: 96px 0; }
+  .sec-head { display: grid; grid-template-columns: 180px 1fr; gap: 32px; margin-bottom: 52px; }
+  .sec-no { font-family: var(--mono); font-size: 13px; color: var(--faint); padding-top: 14px; border-top: 1px solid var(--ink); }
+  h2 { font-family: var(--serif); font-weight: 700; color: var(--ink); font-size: clamp(28px, 3.6vw, 40px); line-height: 1.3; margin: 0 0 14px; }
+  .sec-head p { margin: 0; color: var(--muted); max-width: 40em; }
+
+  /* ── 理念 ── */
+  .belief { background: var(--ink); color: #e9e7e2; }
+  .belief .sec-no { color: #8d8d8d; border-top-color: #555; }
+  .belief h2 { color: #fff; }
+  .belief .sec-head p { color: #b5b2ab; }
+  .contrast { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: #333; border: 1px solid #333; }
+  .contrast > div { background: var(--ink); padding: 34px 32px; }
+  .contrast .k { font-size: 13px; letter-spacing: .14em; color: #8d8d8d; margin-bottom: 14px; }
+  .contrast .v { font-family: var(--serif); font-size: 22px; line-height: 1.6; color: #fff; }
+  .contrast .v em { font-style: normal; color: var(--overlap); }
+  .contrast .old .v { color: #9d9a94; text-decoration: line-through; text-decoration-color: #5d5b57; text-decoration-thickness: 1px; }
+
+  /* ── 五阶段 ── */
+  .value-word {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 18px;
+  }
+  .stage-tab {
+    appearance: none; border: 1px solid var(--line); background: var(--card); cursor: pointer;
+    padding: 20px 18px 18px; text-align: left; border-radius: 4px; font: inherit; color: inherit;
+    transition: border-color .25s, transform .25s, box-shadow .25s;
+  }
+  .stage-tab:hover { transform: translateY(-3px); }
+  .stage-tab .letter { font-family: var(--serif); font-weight: 900; font-size: 64px; line-height: 1; color: var(--line); transition: color .25s; }
+  .stage-tab .sname { display: block; font-weight: 700; color: var(--ink); margin-top: 10px; }
+  .stage-tab .sdesc { display: block; font-size: 13px; color: var(--muted); line-height: 1.6; margin-top: 4px; }
+  .stage-tab[aria-selected="true"] { border-color: var(--ink); box-shadow: 0 18px 40px -28px rgba(0,0,0,.45); }
+  .stage-tab[aria-selected="true"] .letter { color: var(--overlap); }
+  .stage-tab:focus-visible { outline: 2px solid var(--right); outline-offset: 2px; }
+
+  .steps { border: 1px solid var(--line); background: var(--card); border-radius: 4px; padding: 8px 0; min-height: 280px; }
+  .step {
+    display: grid; grid-template-columns: 64px 140px 1fr auto; gap: 18px; align-items: baseline;
+    padding: 18px 28px; border-bottom: 1px dashed var(--line);
+  }
+  .step:last-child { border-bottom: 0; }
+  .step .code { font-family: var(--mono); font-size: 15px; color: var(--cyan-deep); }
+  .step .name { font-weight: 700; color: var(--ink); }
+  .step .desc { color: var(--muted); font-size: 15px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .chip { font-size: 12px; padding: 1px 9px; border-radius: 999px; white-space: nowrap; border: 1px solid; }
+  .chip.main { color: var(--ink); border-color: var(--ink); }
+  .chip.side { color: var(--faint); border-color: var(--line); }
+  .chip.party { color: #9b4f34; border-color: #f0c2b0; background: #fdf3ee; }
+  .chip.mediator { color: #4f6378; border-color: #c9d4df; background: #f3f6f9; }
+  .steps .step { animation: rise .45s ease both; }
+  .steps .step:nth-child(2) { animation-delay: .05s; } .steps .step:nth-child(3) { animation-delay: .1s; }
+  .steps .step:nth-child(4) { animation-delay: .15s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+  .mainline {
+    margin-top: 26px; font-family: var(--mono); font-size: 13px; color: var(--muted);
+    display: flex; flex-wrap: wrap; gap: 6px 4px; align-items: center;
+  }
+  .mainline b { color: var(--ink); font-weight: 500; padding: 2px 8px; border: 1px solid var(--line); border-radius: 3px; background: var(--card); }
+  .mainline i { font-style: normal; color: var(--faint); }
+
+  /* ── 三方 ── */
+  .roles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .role { background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 30px 28px; position: relative; overflow: hidden; }
+  .role::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: var(--c); }
+  .role h3 { font-family: var(--serif); font-size: 22px; color: var(--ink); margin: 6px 0 12px; }
+  .role .who { font-size: 13px; color: var(--faint); letter-spacing: .1em; }
+  .role ul { margin: 0; padding-left: 1.1em; color: var(--muted); font-size: 15px; }
+  .role li { margin: 6px 0; }
+
+  /* ── 数据保护 ── */
+  .guard { background: linear-gradient(180deg, var(--paper), #f2f7f8 40%, var(--paper)); }
+  .pipe { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; counter-reset: p; }
+  .pipe > div { position: relative; padding: 28px 26px 26px; border-left: 1px solid var(--line); }
+  .pipe > div:first-child { border-left: 0; padding-left: 0; }
+  .pipe .n { font-family: var(--mono); font-size: 12px; color: var(--cyan-deep); }
+  .pipe h3 { font-size: 18px; color: var(--ink); margin: 6px 0 10px; }
+  .pipe p { margin: 0; font-size: 15px; color: var(--muted); }
+  .mask-demo {
+    margin-top: 48px; display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center;
+    background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 26px 28px;
+  }
+  .mask-demo .lbl { font-size: 12px; color: var(--faint); letter-spacing: .12em; margin-bottom: 8px; }
+  .mask-demo .txt { font-size: 15px; line-height: 1.9; }
+  .pii { background: #fdf0ea; color: #9b4f34; padding: 0 4px; border-radius: 2px; }
+  .ph { font-family: var(--mono); font-size: 13px; background: var(--cyan-light); color: var(--cyan-deep); padding: 1px 6px; border-radius: 2px; }
+  .arrow { font-size: 22px; color: var(--faint); }
+
+  /* ── AI 怎么做 ── */
+  .facts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; border-top: 1px solid var(--line); }
+  .fact { padding: 28px 28px 28px 0; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: 120px 1fr; gap: 18px; }
+  .fact:nth-child(odd) { border-right: 1px solid var(--line); }
+  .fact:nth-child(even) { padding-left: 28px; }
+  .fact .big { font-family: var(--serif); font-weight: 900; font-size: 40px; line-height: 1; color: var(--ink); }
+  .fact .big small { display: block; margin-top: 8px; font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--muted); }
+  .fact h3 { margin: 0 0 6px; font-size: 17px; color: var(--ink); }
+  .fact p { margin: 0; font-size: 15px; color: var(--muted); }
+
+  /* ── 技术 ── */
+  .stack { display: flex; flex-wrap: wrap; gap: 10px; }
+  .stack span { border: 1px solid var(--line); background: var(--card); padding: 6px 14px; border-radius: 999px; font-size: 14px; }
+  .stack span b { font-weight: 500; color: var(--faint); margin-right: 6px; }
+
+  footer { border-top: 1px solid var(--line); padding: 36px 0 48px; font-size: 13px; color: var(--faint); }
+  footer .wrap { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+
+  /* 滚动渐显（无脚本时内容照常显示） */
+  .js .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+  .js .reveal.in { opacity: 1; transform: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .js .reveal { opacity: 1; transform: none; }
+  }
+
+  /* ── 窄屏 ── */
+  @media (max-width: 900px) {
+    .hero .wrap { grid-template-columns: 1fr; }
+    .venn { justify-self: center; max-width: 380px; order: -1; }
+    .sec-head { grid-template-columns: 1fr; gap: 14px; }
+    .sec-no { padding-top: 10px; }
+    .roles, .pipe { grid-template-columns: 1fr 1fr; }
+    .pipe > div:nth-child(3) { border-left: 0; padding-left: 0; }
+    .step { grid-template-columns: 52px 1fr; gap: 4px 12px; padding: 16px 20px; }
+    .step .desc, .step .chips { grid-column: 2; }
+    .chips { justify-content: flex-start; margin-top: 6px; }
+  }
+  @media (max-width: 640px) {
+    .wrap { padding: 0 16px; }
+    .nav { display: none; }
+    .hero { padding: 36px 0 64px; }
+    section { padding: 68px 0; }
+    .value-word { grid-template-columns: repeat(5, 1fr); gap: 6px; }
+    .stage-tab { padding: 12px 2px; text-align: center; }
+    .stage-tab .letter { font-size: 36px; }
+    .stage-tab .sname { font-size: 12px; white-space: nowrap; }
+    .stage-tab .sdesc { display: none; }
+    .contrast, .roles, .pipe, .facts { grid-template-columns: 1fr; }
+    .pipe > div { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); }
+    .fact, .fact:nth-child(even) { padding: 24px 0; border-right: 0; grid-template-columns: 104px 1fr; }
+    .mask-demo { grid-template-columns: 1fr; }
+    .arrow { transform: rotate(90deg); justify-self: center; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top" id="top">
+  <div class="wrap">
+    <a class="brand" href="#">
+      <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
+        <defs><clipPath id="bl"><path d="M16 29 L6.1 19.07 A8.6 8.6 0 1 1 20.37 15.68 Z"/></clipPath></defs>
+        <path d="M16 29 L6.1 19.07 A8.6 8.6 0 1 1 20.37 15.68 Z" fill="#738ca5"/>
+        <path d="M16 29 L25.9 19.07 A8.6 8.6 0 1 0 11.63 15.68 Z" fill="#2cc1d1"/>
+        <path d="M16 29 L25.9 19.07 A8.6 8.6 0 1 0 11.63 15.68 Z" fill="#e98a68" clip-path="url(#bl)"/>
+      </svg>
+      <span class="brand-name">调解智能辅助系统</span>
+    </a>
+    <nav class="nav" aria-label="页面导航">
+      <a href="#belief">理念</a>
+      <a href="#flow">流程</a>
+      <a href="#roles">三方</a>
+      <a href="#guard">数据保护</a>
+      <a href="#ai">AI 怎么做</a>
+      <a href="../">全部项目 ↗</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- 首屏 -->
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <div class="eyebrow">MEDIATION ASSISTANT · RESOLVE DISPUTES, CREATE VALUE</div>
+        <h1>解决争议<span class="dot">·</span><br>创造价值</h1>
+        <p class="lede">帮助双方找到都能接受、各有所得的方案。从接案评估到调解协议，AI 按五个阶段、十五个环节辅助调解员工作；拿主意的始终是调解员和双方当事人。</p>
+        <div class="cta">
+          <a class="btn btn-ink" href="#flow">看调解流程 →</a>
+          <a class="btn btn-line" href="#guard">案件内容如何保护</a>
+        </div>
+      </div>
+      <figure class="venn" aria-label="示意图：申请人与被申请人的利益交叠处，是双方都能接受的方案">
+        <svg viewBox="0 0 480 400" role="img">
+          <defs>
+            <clipPath id="vl"><circle cx="165" cy="200" r="130"/></clipPath>
+            <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2="7" stroke="#ffffff" stroke-opacity=".35" stroke-width="2"/>
+            </pattern>
+          </defs>
+          <g class="lobe-l">
+            <circle cx="165" cy="200" r="130" fill="#738ca5" fill-opacity=".9"/>
+            <text x="66" y="196" fill="#fff" font-size="20" font-weight="700" font-family="Noto Sans SC, sans-serif">申请人</text>
+            <text x="66" y="222" fill="#fff" fill-opacity=".75" font-size="13" font-family="Noto Sans SC, sans-serif">主张 · 利益</text>
+          </g>
+          <g class="lobe-r">
+            <circle cx="315" cy="200" r="130" fill="#2cc1d1" fill-opacity=".9"/>
+            <text x="334" y="196" fill="#fff" font-size="20" font-weight="700" font-family="Noto Sans SC, sans-serif">被申请人</text>
+            <text x="334" y="222" fill="#fff" fill-opacity=".75" font-size="13" font-family="Noto Sans SC, sans-serif">主张 · 利益</text>
+          </g>
+          <g class="core">
+            <circle cx="315" cy="200" r="130" fill="#e98a68" clip-path="url(#vl)"/>
+            <circle cx="315" cy="200" r="130" fill="url(#hatch)" clip-path="url(#vl)"/>
+          </g>
+          <g class="tag">
+            <line x1="240" y1="200" x2="240" y2="372" stroke="#141414" stroke-width="1"/>
+            <circle cx="240" cy="200" r="4" fill="#141414"/>
+            <text x="240" y="392" text-anchor="middle" fill="#141414" font-size="15" font-weight="700" font-family="Noto Serif SC, serif">共同区域：各有所得的方案</text>
+          </g>
+        </svg>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 理念 -->
+  <section class="belief" id="belief">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-no">01 / 理念</div>
+        <div>
+          <h2>不替谁判对错，帮双方找出路</h2>
+          <p>调解和裁判不同：结果要双方都愿意接受。系统从立场背后的利益出发，帮调解员把「谁对谁错」的争论，转成「怎样安排双方都能得到想要的」的讨论。</p>
+        </div>
+      </div>
+      <div class="contrast reveal">
+        <div class="old"><div class="k">围绕立场</div><div class="v">你要二十万，我只给十五万，各自坚持。</div></div>
+        <div><div class="k">回到利益</div><div class="v">一方要的是<em>尽快回款</em>，一方要的是<em>缓解现金压力</em>：分期付款、提前付清给折让，双方各有所得。</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 流程 -->
+  <section id="flow">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-no">02 / 流程</div>
+        <div>
+          <h2>五个阶段，连起来是 V·A·L·U·E</h2>
+          <p>15 个环节，每个环节由模型起草、调解员核改。主线环节依次推进，前一个完成才能开始下一个；辅助环节随时可做，不影响进度。点击字母查看每个阶段的环节。</p>
+        </div>
+      </div>
+      <div class="value-word reveal" role="tablist" aria-label="调解阶段" id="stageTabs"></div>
+      <div class="steps reveal" id="stepList" role="tabpanel" aria-live="polite"></div>
+      <div class="mainline reveal" aria-label="主线顺序">
+        <span>主线：</span>
+        <b>v1</b><i>→</i><b>a3</b><i>双方确认 →</i><b>l1</b><i>→</i><b>l2</b><i>→</i><b>l3</b><i>→</i><b>u1</b><i>→</i><b>u2</b><i>双方同意 →</i><b>u3</b><i>→</i><b>e1</b><i>→</i><b>e2</b><i>→</i><b>e3</b><i>结案</i>
+      </div>
+    </div>
+  </section>
+
+  <!-- 三方 -->
+  <section id="roles">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-no">03 / 三方</div>
+        <div>
+          <h2>调解员主导，双方各自参与</h2>
+          <p>调解员在工作台推进环节；当事人凭案号和验证码进入，只看到发给自己的内容。双方私下告诉调解员的话，不会出现在发给对方的任何产出里。</p>
+        </div>
+      </div>
+      <div class="roles">
+        <div class="role reveal" style="--c: var(--ink)">
+          <div class="who">MEDIATOR</div>
+          <h3>调解员工作台</h3>
+          <ul>
+            <li>逐环节生成、编辑、保存版本，可对比和恢复历史版本</li>
+            <li>协商事项表：系统计算分歧状态和平衡点</li>
+            <li>AI 助手随时问答，回答注明知识库出处</li>
+            <li>答复期限、催办，由调解员自行决定</li>
+          </ul>
+        </div>
+        <div class="role reveal" style="--c: var(--left)">
+          <div class="who">PARTIES</div>
+          <h3>当事人端</h3>
+          <ul>
+            <li>网上申请调解，上传材料，自动识别申请书</li>
+            <li>确认程序事项（含保密承诺），逐题回答提问</li>
+            <li>对候选方案逐套表态，也可以自己提出方案</li>
+            <li>从本方立场生成评估报告，仅供参考</li>
+          </ul>
+        </div>
+        <div class="role reveal" style="--c: var(--right)">
+          <div class="who">ROOM</div>
+          <h3>云端调解室</h3>
+          <ul>
+            <li>消息可发给全体，或只发给调解员</li>
+            <li>提问、方案、程序确认以卡片形式出现，直接作答</li>
+            <li>各方案地位平等，不标推荐</li>
+            <li>双方同意同一方案，系统自动记录一致结果</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 数据保护 -->
+  <section class="guard" id="guard">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-no">04 / 数据保护</div>
+        <div>
+          <h2>案件原文不出本机</h2>
+          <p>当事人姓名、证件号、电话、账号在本机替换成占位符，再发给大模型；模型的回复回到本机后再还原。发出之前还有一道统一的出口检查，兜住所有遗漏。</p>
+        </div>
+      </div>
+      <div class="pipe">
+        <div class="reveal"><div class="n">STEP 1</div><h3>本地脱敏</h3><p>按本案登记的当事人信息精确替换，加上本地实体识别模型和号码规则，全部在本机运行。</p></div>
+        <div class="reveal"><div class="n">STEP 2</div><h3>发送前检查</h3><p>扫描件识别没把握、当事人未登记等情况，弹窗提示，调解员处理或确认后才发送。</p></div>
+        <div class="reveal"><div class="n">STEP 3</div><h3>出口检查</h3><p>每个请求真正发出前再复查一遍，仍有号码或当事人信息的直接拦下，不论哪段代码发起。</p></div>
+        <div class="reveal"><div class="n">STEP 4</div><h3>出口记录</h3><p>每次请求记下发往哪里、字数、替换了多少处，不记内容，供机构做合规说明。</p></div>
+      </div>
+      <div class="mask-demo reveal" aria-label="脱敏示例">
+        <div>
+          <div class="lbl">本机看到的</div>
+          <div class="txt">申请人<span class="pii">张某某</span>（电话 <span class="pii">138 0000 0000</span>）称，被申请人<span class="pii">某某建材有限公司</span>尚欠货款 20 万元。</div>
+        </div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div>
+          <div class="lbl">发给模型的</div>
+          <div class="txt">申请人<span class="ph">[人名1]</span>（电话 <span class="ph">[电话1]</span>）称，被申请人<span class="ph">[单位1]</span>尚欠货款 20 万元。</div>
+        </div>
+      </div>
+      <p style="margin-top:28px; color: var(--muted); font-size: 15px;" class="reveal">另外：给当事人看的产出，生成后都做保密检查，原文比对加模型判断，查一方只告诉调解员的内容有没有被引用、转述或暗示；支持接入本机或内网部署的模型，案件内容完全不离开机构。</p>
+    </div>
+  </section>
+
+  <!-- AI 怎么做 -->
+  <section id="ai">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-no">05 / AI 怎么做</div>
+        <div>
+          <h2>可核对，而不只是能生成</h2>
+          <p>产出要经得起调解员逐条核对：事实只来自案件材料，规则只来自本地知识库，数字由系统计算、比对。</p>
+        </div>
+      </div>
+      <div class="facts">
+        <div class="fact reveal"><div class="big">3556<small>条法律条文</small></div><div><h3>本地法律知识库</h3><p>30 部现行法律、法规和司法解释，另有 30 件典型调解案例、5 份协议范本；法条只照检索到的原文引用。</p></div></div>
+        <div class="fact reveal"><div class="big">6<small>类结构化产出</small></div><div><h3>结构化交付</h3><p>接案评估、提问、方案、正式和解方案、协议条款、修改建议，都按格式交付并经系统校验，不合格的退回模型改正。</p></div></div>
+        <div class="fact reveal"><div class="big">¥<small>逐个核对</small></div><div><h3>金额与出处核对</h3><p>方案和协议中的金额、日期、期限逐个与依据核对，并能定位到材料的页码和段落；计算交给计算工具，不靠模型心算。</p></div></div>
+        <div class="fact reveal"><div class="big">1<small>键应用修改</small></div><div><h3>e2 改进 e1</h3><p>履行保障环节列出条款的歧义和遗漏，附改后的条文；调解员勾选后一键应用到协议条款，存为新版本。</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 技术 -->
+  <section style="padding-top: 0">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-no">06 / 技术</div>
+        <div>
+          <h2>技术栈</h2>
+          <p>单机即可部署；大模型走 OpenAI 兼容接口，云端服务商与本地模型可在页面上切换。</p>
+        </div>
+      </div>
+      <div class="stack reveal">
+        <span><b>后端</b>Python 3.12 · FastAPI</span>
+        <span><b>数据</b>SQLAlchemy 2 · Alembic · SQLite</span>
+        <span><b>前端</b>React 19 · TypeScript · Vite</span>
+        <span><b>界面</b>Ant Design 6</span>
+        <span><b>模型</b>OpenAI 兼容接口 · 本地模型</span>
+        <span><b>知识库</b>本地向量检索 + 重排序</span>
+        <span><b>材料</b>PDF · Word · 本地 OCR</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>调解智能辅助系统 · 解决争议 · 创造价值</span>
+    <span>本页为产品介绍，页面中的人名、单位、金额均为示例。</span>
+  </div>
+</footer>
+
+<script>
+  // 15 个环节（与系统 definitions.py 一致）；for 表示产出给谁看
+  const STAGES = [
+    { code: 'V', name: '接案准备', desc: '梳理案情，识别协商事项和缺失信息', steps: [
+      ['v1', '接案评估', '提取可协商事项和双方主张，找出缺失的、涉及双方利益的信息。', true, 'mediator'],
+      ['v2', '案情摘要', '一页式摘要：事实、主体、争点、时间线（逐条注明出处）、证据。', false, 'mediator'],
+      ['v3', '调解建议', '调解思路与策略，含双方不调解时的最佳替代方案分析。', false, 'mediator'],
+    ]},
+    { code: 'A', name: '开启过程', desc: '建立氛围，设计并确认调解程序', steps: [
+      ['a1', '氛围建立', '调解开场引导：固定话术，模型只写与本案有关的一两句。', false, 'party'],
+      ['a2', '程序设计', '调解流程与议程：议题按分歧程度排序，先谈立场接近的事项。', false, 'party'],
+      ['a3', '程序确认', '程序事项（含保密承诺）发给双方逐项确认；双方都确认后才能草拟方案。', true, 'party'],
+    ]},
+    { code: 'L', name: '倾听理解', desc: '澄清信息，中立提问，重构双方利益', steps: [
+      ['l1', '信息澄清', '依据缺失信息，分别列出要向申请人、被申请人澄清的问题。', true, 'party'],
+      ['l2', '中立提问', '问题分别发给双方，各自只看到自己的；回复后整理成沟通纪要。', true, 'mediator'],
+      ['l3', '利益重构', '从立场背后的利益出发，提出 2–4 个重构方向。', true, 'mediator'],
+    ]},
+    { code: 'U', name: '方案验证', desc: '草拟候选方案，征求意见，形成和解方案', steps: [
+      ['u1', '方案草拟', '生成 2–3 套候选方案，地位平等、不标推荐，每套写到每个协商事项。', true, 'party'],
+      ['u2', '方案确认', '双方逐套表态，也可自己提出方案；双方同意同一方案即达成一致。', true, 'mediator'],
+      ['u3', '方案输出', '把双方同意的方案整理成正式和解方案。', true, 'party'],
+    ]},
+    { code: 'E', name: '促成解决', desc: '起草协议条款，保障履行，复盘结案', steps: [
+      ['e1', '条款草拟', '参照协议范本起草调解协议条款，当事人名称、金额逐个核对。', true, 'party'],
+      ['e2', '履行保障', '检查条款歧义和遗漏，提出履行保障建议，可一键应用到条款。', true, 'party'],
+      ['e3', '复盘总结', '内部复盘记录，可另存一份脱敏案例到知识库；完成后结案。', true, 'mediator'],
+    ]},
+  ]
+  const FOR = { party: ['party', '当事人可见'], mediator: ['mediator', '只给调解员'] }
+  const tabs = document.getElementById('stageTabs')
+  const list = document.getElementById('stepList')
+
+  function show(i) {
+    tabs.querySelectorAll('.stage-tab').forEach((t, j) => t.setAttribute('aria-selected', String(i === j)))
+    list.innerHTML = STAGES[i].steps.map(([code, name, desc, main, who]) => `
+      <div class="step">
+        <span class="code">${code}</span>
+        <span class="name">${name}</span>
+        <span class="desc">${desc}</span>
+        <span class="chips">
+          <span class="chip ${main ? 'main' : 'side'}">${main ? '主线' : '辅助'}</span>
+          <span class="chip ${FOR[who][0]}">${FOR[who][1]}</span>
+        </span>
+      </div>`).join('')
+  }
+  STAGES.forEach((s, i) => {
+    const b = document.createElement('button')
+    b.className = 'stage-tab'
+    b.setAttribute('role', 'tab')
+    b.innerHTML = `<span class="letter">${s.code}</span><span class="sname">${s.name}</span><span class="sdesc">${s.desc}</span>`
+    b.addEventListener('click', () => show(i))
+    tabs.appendChild(b)
+  })
+  show(0)
+
+  // 顶栏阴影、滚动渐显
+  const topbar = document.getElementById('top')
+  addEventListener('scroll', () => topbar.classList.toggle('scrolled', scrollY > 8), { passive: true })
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target) } })
+  }, { rootMargin: '0px 0px -8% 0px' })
+  // 脚本正常运行到这里才启用渐显，出错时内容照常显示
+  document.documentElement.classList.add('js')
+  document.querySelectorAll('.reveal').forEach((el) => io.observe(el))
+</script>
+</body>
+</html>
