@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>在线争议评审平台 · 及早化解履约争议</title>
+<meta name="description" content="建设工程争议评审在线平台：依据双方签署的合同建立智能合约机制，实时监测履约，达到预设阈值时自动启动评审；评审专家与双方在线互动，智能分析与人工介入结合。">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* 与总入口页同一套颜色：DrbFlow 用陶土橙；左灰蓝、右品牌青代表双方 */
+    --left: #738ca5;
+    --right: #2cc1d1;
+    --terra: #e98a68;
+    --terra-deep: #b4583a;
+    --ink: #141414;
+    --text: #262626;
+    --muted: #5c5c5c;
+    --faint: #8a8a8a;
+    --paper: #fbfaf7;
+    --card: #ffffff;
+    --line: #e7e4dd;
+    --serif: "Noto Serif SC", "Songti SC", "STSong", serif;
+    --sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+    --wrap: 1120px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--text);
+    font: 16px/1.8 var(--sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  /* 纸面颗粒 */
+  body::before {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .35;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  main, header, footer { position: relative; z-index: 1; }
+  a { color: var(--terra-deep); }
+  .wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 24px; }
+  .mono { font-family: var(--mono); letter-spacing: .04em; }
+
+  /* ── 顶栏 ── */
+  .top {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(251, 250, 247, .86);
+    backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid transparent;
+    transition: border-color .3s;
+  }
+  .top.scrolled { border-bottom-color: var(--line); }
+  .top .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-weight: 700; }
+  .brand-name {
+    background: linear-gradient(90deg, var(--left), var(--terra) 55%, var(--right));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .nav { display: flex; gap: 26px; font-size: 14px; }
+  .nav a { color: var(--muted); text-decoration: none; }
+  .nav a:hover { color: var(--ink); }
+
+  /* ── 首屏 ── */
+  .hero { padding: 72px 0 96px; }
+  .hero .wrap { display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; }
+  .eyebrow { font-size: 13px; color: var(--terra-deep); font-weight: 500; letter-spacing: .18em; }
+  h1 {
+    font-family: var(--serif); font-weight: 900; color: var(--ink);
+    font-size: clamp(42px, 6.4vw, 78px); line-height: 1.12; margin: 18px 0 22px; letter-spacing: .02em;
+  }
+  h1 .dot { color: var(--terra); padding: 0 .08em; }
+  .lede { font-size: 18px; color: var(--muted); max-width: 30em; margin: 0 0 34px; }
+  .cta { display: flex; gap: 14px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 999px;
+    font-size: 15px; font-weight: 500; text-decoration: none; transition: transform .2s, background .2s, box-shadow .2s;
+  }
+  .btn-ink { background: var(--ink); color: #fff; }
+  .btn-ink:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -12px rgba(0,0,0,.5); }
+  .btn-line { border: 1px solid var(--line); color: var(--ink); background: var(--card); }
+  .btn-line:hover { border-color: var(--ink); }
+
+  .ladder-fig { position: relative; width: 100%; max-width: 480px; justify-self: end; }
+  .ladder-fig svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .ladder-fig .bar { animation: grow 1.1s cubic-bezier(.2,.8,.2,1) both .2s; transform-origin: left; }
+  .ladder-fig .bar2 { animation: grow 1.1s cubic-bezier(.2,.8,.2,1) both .6s; transform-origin: left; }
+  .ladder-fig .bar3 { animation: grow 1.1s cubic-bezier(.2,.8,.2,1) both 1s; transform-origin: left; }
+  .ladder-fig .flag { animation: fade .8s ease both 1.9s; }
+  .ladder-fig .lvl { animation: fade .8s ease both; }
+  .ladder-fig .lvl2 { animation: fade .8s ease both .5s; }
+  .ladder-fig .lvl3 { animation: fade .8s ease both 1.1s; }
+  @keyframes grow { from { transform: scaleX(0); } }
+  @keyframes fade { from { opacity: 0; } }
+
+  /* ── 通用小节 ── */
+  section { padding: 96px 0; }
+  .sec-head { display: grid; grid-template-columns: 180px 1fr; gap: 32px; margin-bottom: 52px; }
+  .sec-no { font-family: var(--mono); font-size: 13px; color: var(--faint); padding-top: 14px; border-top: 1px solid var(--ink); }
+  h2 { font-family: var(--serif); font-weight: 700; color: var(--ink); font-size: clamp(28px, 3.6vw, 40px); line-height: 1.3; margin: 0 0 14px; }
+  .sec-head p { margin: 0; color: var(--muted); max-width: 40em; }
+
+  /* ── 理念 ── */
+  .belief { background: var(--ink); color: #e9e7e2; }
+  .belief .sec-no { color: #8d8d8d; border-top-color: #555; }
+  .belief h2 { color: #fff; }
+  .belief .sec-head p { color: #b5b2ab; }
+  .contrast { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: #333; border: 1px solid #333; }
+  .contrast > div { background: var(--ink); padding: 34px 32px; }
+  .contrast .k { font-size: 13px; letter-spacing: .14em; color: #8d8d8d; margin-bottom: 14px; }
+  .contrast .v { font-family: var(--serif); font-size: 22px; line-height: 1.6; color: #fff; }
+  .contrast .v em { font-style: normal; color: var(--terra); }
+  .contrast .old .v { color: #9d9a94; text-decoration: line-through; text-decoration-color: #5d5b57; text-decoration-thickness: 1px; }
+
+  /* ── 四步机制 ── */
+  .mech {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border-top: 1px solid var(--line);
+  }
+  .mech > div { padding: 30px 26px 30px 24px; border-left: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .mech > div:first-child { border-left: 0; padding-left: 0; }
+  .mech .n { font-family: var(--mono); font-size: 12px; color: var(--terra-deep); }
+  .mech h3 { font-size: 19px; color: var(--ink); margin: 8px 0 10px; }
+  .mech p { margin: 0 0 14px; font-size: 15px; color: var(--muted); }
+  .mech .foot { font-family: var(--mono); font-size: 12px; color: var(--faint); border-top: 1px dashed var(--line); padding-top: 10px; }
+
+  /* ── 升级阶梯 ── */
+  .ladder-sec { background: linear-gradient(180deg, var(--paper), #f8f3ef 40%, var(--paper)); }
+  .ladder { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .lad { background: var(--card); border: 2px solid var(--line); border-radius: 10px; padding: 20px 20px 18px; transition: border-color .25s; }
+  .lad b { display: block; font-family: var(--serif); font-size: 18px; color: var(--ink); }
+  .lad .en { font-family: var(--mono); font-size: 11px; color: var(--faint); letter-spacing: .08em; }
+  .lad p { margin: 8px 0 0; font-size: 14px; color: var(--muted); line-height: 1.7; }
+  .lad.on { border-color: var(--terra); background: #fdf6f2; }
+  .lad.l3 { border-color: var(--terra-deep); }
+
+  /* ── 三方 ── */
+  .roles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .role { background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 30px 28px; position: relative; overflow: hidden; }
+  .role::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: var(--c); }
+  .role h3 { font-family: var(--serif); font-size: 22px; color: var(--ink); margin: 6px 0 12px; }
+  .role .who { font-size: 13px; color: var(--faint); letter-spacing: .1em; }
+  .role ul { margin: 0; padding-left: 1.1em; color: var(--muted); font-size: 15px; }
+  .role li { margin: 6px 0; }
+
+  /* ── 怎么信 ── */
+  .facts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; border-top: 1px solid var(--line); }
+  .fact { padding: 28px 28px 28px 0; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: 120px 1fr; gap: 18px; }
+  .fact:nth-child(odd) { border-right: 1px solid var(--line); }
+  .fact:nth-child(even) { padding-left: 28px; }
+  .fact .big { font-family: var(--serif); font-weight: 900; font-size: 40px; line-height: 1; color: var(--ink); }
+  .fact .big small { display: block; margin-top: 8px; font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--muted); }
+  .fact h3 { margin: 0 0 6px; font-size: 17px; color: var(--ink); }
+  .fact p { margin: 0; font-size: 15px; color: var(--muted); }
+  .fact .big .sha { font-family: var(--mono); font-weight: 500; font-size: 24px; letter-spacing: .02em; word-break: break-all; line-height: 1.2; }
+
+  /* ── 技术 ── */
+  .stack { display: flex; flex-wrap: wrap; gap: 10px; }
+  .stack span { border: 1px solid var(--line); background: var(--card); padding: 6px 14px; border-radius: 999px; font-size: 14px; }
+  .stack span b { font-weight: 500; color: var(--faint); margin-right: 6px; }
+
+  footer { border-top: 1px solid var(--line); padding: 36px 0 48px; font-size: 13px; color: var(--faint); }
+  footer .wrap { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+
+  /* 滚动渐显（无脚本时内容照常显示） */
+  .js .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+  .js .reveal.in { opacity: 1; transform: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .js .reveal { opacity: 1; transform: none; }
+  }
+
+  /* ── 窄屏 ── */
+  @media (max-width: 900px) {
+    .hero .wrap { grid-template-columns: 1fr; }
+    .ladder-fig { justify-self: center; max-width: 380px; order: -1; }
+    .sec-head { grid-template-columns: 1fr; gap: 14px; }
+    .sec-no { padding-top: 10px; }
+    .mech { grid-template-columns: 1fr 1fr; }
+    .mech > div:nth-child(3) { border-left: 0; padding-left: 0; }
+    .ladder { grid-template-columns: 1fr 1fr; }
+    .roles { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 640px) {
+    .wrap { padding: 0 16px; }
+    .nav { display: none; }
+    .hero { padding: 36px 0 64px; }
+    section { padding: 68px 0; }
+    .contrast, .mech, .ladder, .roles, .facts { grid-template-columns: 1fr; }
+    .mech > div { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); }
+    .fact, .fact:nth-child(even) { padding: 24px 0; border-right: 0; grid-template-columns: 104px 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top" id="top">
+  <div class="wrap">
+    <a class="brand" href="#">
+      <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
+        <defs><clipPath id="bl"><path d="M16 29 L6.1 19.07 A8.6 8.6 0 1 1 20.37 15.68 Z"/></clipPath></defs>
+        <path d="M16 29 L6.1 19.07 A8.6 8.6 0 1 1 20.37 15.68 Z" fill="#738ca5"/>
+        <path d="M16 29 L25.9 19.07 A8.6 8.6 0 1 0 11.63 15.68 Z" fill="#e98a68"/>
+        <path d="M16 29 L25.9 19.07 A8.6 8.6 0 1 0 11.63 15.68 Z" fill="#2cc1d1" clip-path="url(#bl)"/>
+      </svg>
+      <span class="brand-name">在线争议评审平台</span>
+    </a>
+    <nav class="nav" aria-label="页面导航">
+      <a href="#belief">理念</a>
+      <a href="#mech">机制</a>
+      <a href="#ladder">升级</a>
+      <a href="#roles">三方</a>
+      <a href="#trust">怎么信</a>
+      <a href="../">全部项目 ↗</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- 首屏 -->
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <div class="eyebrow">DISPUTE REVIEW BOARD · ONLINE PLATFORM</div>
+        <h1>把履约争议<span class="dot">·</span><br>挡在工程半路</h1>
+        <p class="lede">依据双方签署的合同建立智能合约机制，实时监测履约：达到预设阈值时自动启动评审，评审专家与双方在线互动，智能分析与人工介入结合。争议在工程进行中被及早化解，而不是攒到完工后对簿公堂。</p>
+        <div class="cta">
+          <a class="btn btn-ink" href="#mech">看运行机制 →</a>
+          <a class="btn btn-line" href="#trust">凭什么能信</a>
+        </div>
+      </div>
+      <figure class="ladder-fig" aria-label="示意图：履约异常逐级升级，达到 L3 时争议评审自动建档">
+        <svg viewBox="0 0 480 400" role="img">
+          <defs>
+            <clipPath id="bl2"><path d="M16 29 L6.1 19.07 A8.6 8.6 0 1 1 20.37 15.68 Z"/></clipPath>
+          </defs>
+          <!-- 背景 -->
+          <rect x="0" y="0" width="480" height="400" fill="#ffffff" fill-opacity="0"/>
+          <!-- 阶梯：三级 -->
+          <g class="lvl">
+            <rect x="30" y="270" width="120" height="60" rx="8" fill="#738ca5" fill-opacity=".22"/>
+            <text x="90" y="306" text-anchor="middle" fill="#45596d" font-size="15" font-weight="700" font-family="Noto Sans SC, sans-serif">L1 预警</text>
+            <text x="90" y="326" text-anchor="middle" fill="#8a8a8a" font-size="12" font-family="Noto Sans SC, sans-serif">提醒当事人</text>
+          </g>
+          <g class="lvl2">
+            <rect x="180" y="200" width="120" height="130" rx="8" fill="#e98a68" fill-opacity=".3"/>
+            <text x="240" y="240" text-anchor="middle" fill="#a0512f" font-size="15" font-weight="700" font-family="Noto Sans SC, sans-serif">L2 协助</text>
+            <text x="240" y="262" text-anchor="middle" fill="#8a8a8a" font-size="12" font-family="Noto Sans SC, sans-serif">邀请评审员入场</text>
+            <text x="240" y="280" text-anchor="middle" fill="#8a8a8a" font-size="12" font-family="Noto Sans SC, sans-serif">辅助自行协商</text>
+          </g>
+          <g class="lvl3">
+            <rect x="330" y="130" width="120" height="200" rx="8" fill="#b4583a" fill-opacity=".92"/>
+            <text x="390" y="180" text-anchor="middle" fill="#fff" font-size="15" font-weight="700" font-family="Noto Sans SC, sans-serif">L3 正式评审</text>
+            <text x="390" y="204" text-anchor="middle" fill="#ffffff" fill-opacity=".8" font-size="12" font-family="Noto Sans SC, sans-serif">建档 · 通知</text>
+            <text x="390" y="222" text-anchor="middle" fill="#ffffff" fill-opacity=".8" font-size="12" font-family="Noto Sans SC, sans-serif">起算期限</text>
+            <text x="390" y="240" text-anchor="middle" fill="#ffffff" fill-opacity=".8" font-size="12" font-family="Noto Sans SC, sans-serif">遴选评审员</text>
+          </g>
+          <!-- 底线：合同 -->
+          <g class="bar">
+            <rect x="30" y="336" width="420" height="3" rx="1.5" fill="#141414"/>
+          </g>
+          <text x="30" y="362" fill="#141414" font-size="13" font-weight="700" font-family="Noto Serif SC, serif">合同签署 · 智能合约激活 · 履约时钟开始走</text>
+          <!-- 箭头 -->
+          <g class="flag">
+            <path d="M390 130 L390 96" stroke="#b4583a" stroke-width="2"/>
+            <path d="M390 96 L404 106 L390 116 Z" fill="#b4583a"/>
+            <text x="378" y="88" text-anchor="end" fill="#b4583a" font-size="13" font-weight="700" font-family="Noto Sans SC, sans-serif">达到阈值，自动建档</text>
+          </g>
+        </svg>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 理念 -->
+  <section class="belief" id="belief">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-no">01 / 理念</div>
+        <div>
+          <h2>争议不攒着，一路上都有人管</h2>
+          <p>工程争议大多不是突然爆发的：一两次付款逾期、一纸签证没人答复，拖着拖着就变成索赔大战。评审机制的价值在于「及早」——合同里预先约定第三方，争议还在小的时候就介入。</p>
+        </div>
+      </div>
+      <div class="contrast reveal">
+        <div class="old"><div class="k">出了事再解决</div><div class="v">逾期、签证、变更各攒一摞，完工后一起算总账。</div></div>
+        <div><div class="k">边履约边化解</div><div class="v">义务逾期当天系统就知道，<em>先提醒、再协助、最后评审</em>，多数争议在前两级就停住了。</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 四步机制 -->
+  <section id="mech">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-no">02 / 机制</div>
+        <div>
+          <h2>从一纸合同，到一份评审意见</h2>
+          <p>签约、监测、启动、评审四步环环相扣。系统只做程序能确定的事；认定事实、作出意见或决定，始终由评审专家完成。</p>
+        </div>
+      </div>
+      <div class="mech reveal">
+        <div>
+          <div class="n">STEP 1</div>
+          <h3>签约建约</h3>
+          <p>双方上传合同、分别电子签署、分别确认条款。系统把履约条款编译成规则：「当事件 X 发生，责任方须在 N 日内以事件 Y 应答」。</p>
+          <div class="foot">条款可核到原文，须双方确认才激活</div>
+        </div>
+        <div>
+          <div class="n">STEP 2</div>
+          <h3>履约监测</h3>
+          <p>付款申请、签证、验收等结构化事件进渠道，每条带时间戳与证据哈希。义务状态由事件日志确定性重放，逾期即知，双方对称可见。</p>
+          <div class="foot">同一份日志，永远得到同一结论</div>
+        </div>
+        <div>
+          <div class="n">STEP 3</div>
+          <h3>升级启动</h3>
+          <p>异常按 L1 预警 → L2 协助 → L3 评审逐级升级。达到 L3 且合同授权时，系统自动执行建档、通知、起算期限等程序性动作。</p>
+          <div class="foot">只动程序，不碰实体判断</div>
+        </div>
+        <div>
+          <div class="n">STEP 4</div>
+          <h3>争议评审</h3>
+          <p>评审专家在工作室与争议页处理议题：智能拆分议题、背靠背收集偏好、生成方案包，双方接受即形成和解协议；也可走决定轨道出决定书。</p>
+          <div class="foot">最终决定权在评审员与当事人</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 升级阶梯 -->
+  <section class="ladder-sec" id="ladder">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-no">03 / 升级</div>
+        <div>
+          <h2>四级阶梯，越往后代价越大</h2>
+          <p>L0–L3 的判定阈值来自合同约定（如「任一金额事项逾期 ≥ 14 日且 ≥ 2 项逾期」），同一事项设冷却期，升级不能被当作用施压的工具。</p>
+        </div>
+      </div>
+      <div class="ladder reveal">
+        <div class="lad">
+          <span class="en">LEVEL 0</span><b>L0 正常</b>
+          <p>履约正常，系统只记录。每一次按期应答，都是渠道里的一笔存证。</p>
+        </div>
+        <div class="lad on">
+          <span class="en">LEVEL 1</span><b>L1 预警</b>
+          <p>义务临近届满或刚逾期，向责任方与对方同时提醒，给自行处理留出窗口。</p>
+        </div>
+        <div class="lad on">
+          <span class="en">LEVEL 2</span><b>L2 非正式协助</b>
+          <p>逾期扩大，邀请评审员入场：不建档、不作结论，只辅助双方自行协商。云端工作室自动建立。</p>
+        </div>
+        <div class="lad on l3">
+          <span class="en">LEVEL 3</span><b>L3 正式评审</b>
+          <p>触发评审条款：自动建档（争议档案 + 渠道证据包）、通知双方、起算期限、遴选评审员。</p>
+        </div>
+      </div>
+      <p style="margin-top:26px; color: var(--muted); font-size: 15px;" class="reveal">L3 之后有两条轨道：<b>协商轨道</b>（议题 → 偏好 → 方案包 → 和解协议，履行节点回写履约监测继续跟踪）与<b>决定轨道</b>（调查会 → 决定书，按约定效力起算异议期）。两条轨道共用同一份档案与证据。</p>
+    </div>
+  </section>
+
+  <!-- 三方 -->
+  <section id="roles">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-no">04 / 三方</div>
+        <div>
+          <h2>评审专家居中，双方各在其位</h2>
+          <p>一份合同即一个项目。当事人从当事人通道进入，评审专家从专家通道进入；各方看到的，是按身份过滤后的同一份底账。</p>
+        </div>
+      </div>
+      <div class="roles">
+        <div class="role reveal" style="--c: var(--left)">
+          <div class="who">OWNER</div>
+          <h3>业主（发包人代表）</h3>
+          <ul>
+            <li>上传合同、电子签署、确认条款</li>
+            <li>提交付款、答复签证，管理付款异议</li>
+            <li>逾期发生时收到同级提醒</li>
+            <li>对议题提交背靠背偏好，对方案表态</li>
+          </ul>
+        </div>
+        <div class="role reveal" style="--c: var(--terra)">
+          <div class="who">REVIEWER</div>
+          <h3>评审专家（常设评审员）</h3>
+          <ul>
+            <li>确认或退回系统的每一条处理建议</li>
+            <li>确定协商议题并发布，可修订（留痕）</li>
+            <li>主持协商或调查会，生成意见 / 决定书</li>
+            <li>与单独一方的沟通须注明事由，双方可见记录</li>
+          </ul>
+        </div>
+        <div class="role reveal" style="--c: var(--right)">
+          <div class="who">CONTRACTOR</div>
+          <h3>承包商（承包人项目经理）</h3>
+          <ul>
+            <li>提交付款申请、索赔意向等结构化事件</li>
+            <li>事件可附计量单、签证单等文件存证</li>
+            <li>逾期被监测时，状态双方对称可见</li>
+            <li>接受方案或意见后，确认和解履行节点</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 怎么信 -->
+  <section id="trust">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-no">05 / 怎么信</div>
+        <div>
+          <h2>每一步都经得起回放</h2>
+          <p>评审意见迟早要面对「凭什么」的追问。系统在设计上就按证据标准来：只追加、可校验、须确认、能导出。</p>
+        </div>
+      </div>
+      <div class="facts">
+        <div class="fact reveal"><div class="big"><span class="sha">SHA-256</span><small>哈希链</small></div><div><h3>渠道事件只追加、可校验</h3><p>每条合同事件、工作室消息都写入哈希链，事后改动会立即暴露；导出证据包含 SHA-256 清单，可直接转鉴定或仲裁。</p></div></div>
+        <div class="fact reveal"><div class="big"><span class="sha">🔒</span><small>背靠背</small></div><div><h3>偏好只给本方与评审员</h3><p>红线、权重、最低效用由服务端按身份过滤，对方看不到；评审员看到的是双方，不是任何一方。</p></div></div>
+        <div class="fact reveal"><div class="big"><span class="sha">✓</span><small>人工确认</small></div><div><h3>系统建议都要人点头</h3><p>异常处理建议、议题拆分、方案包、意见草稿先进评审专家的待确认队列：可采纳、可修改、可退回，原稿与修改都留痕。</p></div></div>
+        <div class="fact reveal"><div class="big"><span class="sha">AI→核</span><small>先核再用</small></div><div><h3>模型输出先对原文</h3><p>合同识别、议题拆分等调用大模型时，条款须能在原文中逐字核到，否则标注「原文未核到」并回退规则结果；调用失败也不停摆。</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 技术 -->
+  <section style="padding-top: 0">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-no">06 / 技术</div>
+        <div>
+          <h2>技术栈</h2>
+          <p>单机即可部署；核心领域逻辑与前后端分离，事件重放确定状态；大模型走 OpenAI 兼容接口，未配置时全部回退规则化实现。</p>
+        </div>
+      </div>
+      <div class="stack reveal">
+        <span><b>后端</b>Node.js · Fastify 5</span>
+        <span><b>数据</b>SQLite（node:sqlite，无原生依赖）</span>
+        <span><b>前端</b>React 19 · TypeScript · Vite</span>
+        <span><b>领域</b>纯函数核心 · 事件重放 · 状态机</span>
+        <span><b>模型</b>OpenAI 兼容接口 · 规则回退</span>
+        <span><b>实时</b>SSE 推送</span>
+        <span><b>存证</b>SHA-256 哈希链 · ZIP 证据包</span>
+        <span><b>提醒</b>站内 + 企业微信 / Webhook</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>在线争议评审平台 · 及早化解履约争议</span>
+    <span>本页为产品介绍，页面中的合同、金额、事件均为示例。</span>
+  </div>
+</footer>
+
+<script>
+  // 顶栏阴影、滚动渐显
+  const topbar = document.getElementById('top')
+  addEventListener('scroll', () => topbar.classList.toggle('scrolled', scrollY > 8), { passive: true })
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target) } })
+  }, { rootMargin: '0px 0px -8% 0px' })
+  // 脚本正常运行到这里才启用渐显，出错时内容照常显示
+  document.documentElement.classList.add('js')
+  document.querySelectorAll('.reveal').forEach((el) => io.observe(el))
+</script>
+</body>
+</html>
