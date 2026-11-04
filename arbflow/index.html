@@ -1,0 +1,913 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>仲裁全流程智能辅助系统 · 广州仲裁规则（2026）示范实践</title>
+<meta name="description" content="仲裁全流程智能辅助系统（ArbFlow）：依据《广州仲裁委员会仲裁规则（2026）》，将全流程解构为 10 个阶段、64 项工作流。程序能确定的由程序计算，需要判断与起草的由大模型辅助并经四层严格校验，最终由有权主体确认。">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1b2c74;
+    --navy-deep: #121e54;
+    --navy-light: #e8ecf8;
+    --gold: #c9b37e;
+    --gold-deep: #9d844e;
+    --gold-light: #fbf7ee;
+    --cyan: #2cc1d1;
+    --slate: #738ca5;
+    --terra: #e98a68;
+    --ink: #141414;
+    --text: #262626;
+    --muted: #5c5c5c;
+    --faint: #8a8a8a;
+    --paper: #fbfaf7;
+    --card: #ffffff;
+    --line: #e7e4dd;
+    --serif: "Noto Serif SC", "Songti SC", "STSong", serif;
+    --sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+    --wrap: 1120px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--text);
+    font: 16px/1.8 var(--sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .35;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  main, header, footer { position: relative; z-index: 1; }
+  a { color: var(--navy); text-decoration: none; }
+  a:hover { color: var(--ink); }
+  .wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 24px; }
+  .mono { font-family: var(--mono); letter-spacing: .04em; }
+
+  /* ── 顶栏 ── */
+  .top {
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(251, 250, 247, .86);
+    backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid transparent;
+    transition: border-color .3s;
+  }
+  .top.scrolled { border-bottom-color: var(--line); }
+  .top .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-weight: 700; }
+  .brand-logo { width: 24px; height: 24px; }
+  .brand-name {
+    background: linear-gradient(90deg, var(--navy), var(--navy-deep) 60%, var(--gold-deep));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .nav { display: flex; gap: 26px; font-size: 14px; }
+  .nav a { color: var(--muted); }
+  .nav a:hover { color: var(--ink); }
+
+  /* ── 首屏 ── */
+  .hero { padding: 72px 0 96px; }
+  .hero .wrap { display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; }
+  .eyebrow { font-size: 13px; color: var(--navy); font-weight: 500; letter-spacing: .18em; }
+  h1 {
+    font-family: var(--serif); font-weight: 900; color: var(--ink);
+    font-size: clamp(40px, 6vw, 76px); line-height: 1.15; margin: 18px 0 22px; letter-spacing: .02em;
+  }
+  h1 .dot { color: var(--gold-deep); padding: 0 .08em; }
+  .lede { font-size: 18px; color: var(--muted); max-width: 33em; margin: 0 0 28px; line-height: 1.75; }
+  .creed { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 34px; }
+  .creed span { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 6px 16px; font-size: 13.5px; }
+  .creed b { font-family: var(--mono); font-weight: 500; color: var(--navy); margin-right: 8px; }
+
+  .cta { display: flex; gap: 14px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 999px;
+    font-size: 15px; font-weight: 500; text-decoration: none; transition: transform .2s, background .2s, box-shadow .2s;
+  }
+  .btn-ink { background: var(--navy); color: #fff; }
+  .btn-ink:hover { background: var(--navy-deep); transform: translateY(-2px); box-shadow: 0 10px 24px -12px rgba(27,44,116,.6); color: #fff; }
+  .btn-line { border: 1px solid var(--line); color: var(--ink); background: var(--card); }
+  .btn-line:hover { border-color: var(--navy); }
+
+  /* 首屏示意图 */
+  .hero-fig { position: relative; width: 100%; max-width: 480px; justify-self: end; }
+  .hero-fig svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .hero-fig .track-glow { animation: pulse-stroke 3s ease-in-out infinite alternate; }
+  .hero-fig .guard-shield { animation: shield-float 4s ease-in-out infinite alternate; }
+  .hero-fig .seal-spin { transform-origin: 390px 290px; }
+
+  @keyframes pulse-stroke {
+    from { stroke-opacity: .4; }
+    to { stroke-opacity: .95; }
+  }
+  @keyframes shield-float {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-4px); }
+  }
+
+  /* ── 通用小节 ── */
+  section { padding: 96px 0; }
+  .sec-head { display: grid; grid-template-columns: 180px 1fr; gap: 32px; margin-bottom: 52px; }
+  .sec-no { font-family: var(--mono); font-size: 13px; color: var(--faint); padding-top: 14px; border-top: 1px solid var(--ink); }
+  h2 { font-family: var(--serif); font-weight: 700; color: var(--ink); font-size: clamp(28px, 3.6vw, 40px); line-height: 1.3; margin: 0 0 14px; }
+  .sec-head p { margin: 0; color: var(--muted); max-width: 44em; }
+
+  /* ── 01 理念 ── */
+  .belief { background: var(--ink); color: #e9e7e2; }
+  .belief .sec-no { color: #8d8d8d; border-top-color: #555; }
+  .belief h2 { color: #fff; }
+  .belief .sec-head p { color: #b5b2ab; }
+  .contrast { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: #2f2f2f; border: 1px solid #2f2f2f; margin-bottom: 40px; }
+  .contrast > div { background: var(--ink); padding: 36px 32px; }
+  .contrast .k { font-size: 13px; letter-spacing: .14em; color: #8d8d8d; margin-bottom: 14px; }
+  .contrast .v { font-family: var(--serif); font-size: 21px; line-height: 1.6; color: #fff; }
+  .contrast .v em { font-style: normal; color: var(--gold); border-bottom: 1px solid var(--gold-deep); }
+  .contrast .old .v { color: #8b8882; text-decoration: line-through; text-decoration-color: #5d5b57; text-decoration-thickness: 1px; }
+
+  .creed-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .creed-card { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 6px; padding: 24px 20px; }
+  .creed-card .num { font-family: var(--mono); font-size: 14px; color: var(--gold); margin-bottom: 12px; }
+  .creed-card h3 { font-family: var(--serif); font-size: 18px; color: #fff; margin: 0 0 8px; }
+  .creed-card p { font-size: 13.5px; color: #a3a099; line-height: 1.7; margin: 0; }
+
+  /* ── 02 阶段与 64 项待办 ── */
+  .stages-browser { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 28px; }
+  .stage-nav { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+  .stage-tab {
+    background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 8px 14px;
+    font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; transition: all .2s; white-space: nowrap;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .stage-tab .tag { font-family: var(--mono); font-weight: 700; color: var(--faint); font-size: 12px; }
+  .stage-tab:hover { background: var(--paper); color: var(--ink); border-color: var(--line); }
+  .stage-tab.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+  .stage-tab.active .tag { color: var(--gold); }
+
+  .stage-detail { margin-top: 28px; display: grid; grid-template-columns: 280px 1fr; gap: 32px; }
+  .stage-meta { border-right: 1px solid var(--line); padding-right: 28px; }
+  .stage-meta .badge-side { display: inline-block; padding: 3px 10px; border-radius: 999px; background: var(--navy-light); color: var(--navy); font-size: 12px; font-weight: 500; margin-bottom: 12px; }
+  .stage-meta h3 { font-family: var(--serif); font-size: 24px; color: var(--ink); margin: 0 0 10px; }
+  .stage-meta p { font-size: 14px; color: var(--muted); line-height: 1.7; margin: 0 0 18px; }
+  .stage-meta .meta-item { font-size: 13px; color: var(--text); border-top: 1px dashed var(--line); padding-top: 12px; margin-top: 12px; }
+  .stage-meta .meta-item b { color: var(--faint); font-weight: 500; display: block; margin-bottom: 4px; }
+
+  .task-list { display: flex; flex-direction: column; gap: 10px; }
+  .task-item {
+    display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border: 1px solid var(--line);
+    border-radius: 6px; background: var(--paper); transition: border-color .2s, background .2s; gap: 16px;
+  }
+  .task-item:hover { border-color: var(--navy); background: #fff; }
+  .task-info { display: flex; align-items: center; gap: 12px; flex: 1; }
+  .task-id { font-family: var(--mono); font-size: 12.5px; font-weight: 700; color: var(--navy); min-width: 52px; }
+  .task-name { font-size: 14px; color: var(--ink); font-weight: 500; }
+  .task-badges { display: flex; align-items: center; gap: 8px; }
+  .tpl-pill { font-size: 11.5px; padding: 2px 8px; border-radius: 4px; background: #fff; border: 1px solid var(--line); color: var(--muted); font-family: var(--sans); }
+  .actor-pill { font-size: 11.5px; padding: 2px 8px; border-radius: 4px; background: var(--navy-light); color: var(--navy); font-weight: 500; }
+
+  /* ── 03 四重校验护栏 ── */
+  .guards-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+  .guard-card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 32px 28px;
+    position: relative; overflow: hidden; transition: transform .25s, box-shadow .25s;
+  }
+  .guard-card:hover { transform: translateY(-3px); box-shadow: 0 16px 36px -20px rgba(0,0,0,.15); border-color: var(--navy); }
+  .guard-card::before { content: ""; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: var(--navy); }
+  .guard-num { font-family: var(--mono); font-size: 13px; color: var(--gold-deep); font-weight: 700; letter-spacing: .08em; margin-bottom: 12px; }
+  .guard-card h3 { font-family: var(--serif); font-size: 21px; color: var(--ink); margin: 0 0 12px; }
+  .guard-card p { font-size: 14.5px; color: var(--muted); line-height: 1.75; margin: 0 0 18px; }
+  .guard-rule { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; font-size: 13px; color: var(--text); }
+  .guard-rule b { color: var(--navy); font-weight: 500; margin-right: 6px; }
+
+  /* ── 04 主体确认机制 ── */
+  .roles-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .role-card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 26px 22px;
+    display: flex; flex-direction: column; transition: border-color .2s;
+  }
+  .role-card:hover { border-color: var(--ink); }
+  .role-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .role-title { font-family: var(--serif); font-size: 19px; font-weight: 700; color: var(--ink); }
+  .role-tag { font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 4px; }
+  .role-card p { font-size: 13.5px; color: var(--muted); line-height: 1.75; margin: 0 0 16px; flex: 1; }
+  .role-acts { font-size: 12.5px; border-top: 1px dashed var(--line); padding-top: 12px; color: var(--text); }
+  .role-acts b { color: var(--faint); font-weight: 500; display: block; margin-bottom: 4px; }
+
+  /* ── 05 技术架构 ── */
+  .tech-box { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 36px 32px; }
+  .tech-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 24px; }
+  .tech-item h4 { font-family: var(--serif); font-size: 17px; color: var(--ink); margin: 0 0 8px; }
+  .tech-item p { font-size: 13.5px; color: var(--muted); line-height: 1.7; margin: 0; }
+  .tech-item .mono-tag { font-family: var(--mono); font-size: 12px; color: var(--navy); font-weight: 700; margin-bottom: 6px; display: block; }
+
+  /* ── 页脚 ── */
+  footer { padding: 48px 0 64px; border-top: 1px solid var(--line); font-size: 13.5px; color: var(--faint); }
+  footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px; align-items: center; }
+  .footer-links { display: flex; gap: 20px; }
+  .footer-links a { color: var(--muted); }
+  .footer-links a:hover { color: var(--ink); }
+
+  /* ── 动画 ── */
+  .js .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+  .js .reveal.in { opacity: 1; transform: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .js .reveal { opacity: 1; transform: none; }
+  }
+
+  @media (max-width: 960px) {
+    .hero .wrap { grid-template-columns: 1fr; gap: 36px; }
+    .hero-fig { justify-self: center; }
+    .stage-detail { grid-template-columns: 1fr; gap: 20px; }
+    .stage-meta { border-right: none; border-bottom: 1px solid var(--line); padding-right: 0; padding-bottom: 20px; }
+    .creed-cards { grid-template-columns: 1fr 1fr; }
+    .guards-grid { grid-template-columns: 1fr; }
+    .roles-grid { grid-template-columns: 1fr 1fr; }
+    .tech-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    .wrap { padding: 0 16px; }
+    header .nav { display: none; }
+    .sec-head { grid-template-columns: 1fr; gap: 12px; margin-bottom: 32px; }
+    .contrast { grid-template-columns: 1fr; }
+    .creed-cards { grid-template-columns: 1fr; }
+    .roles-grid { grid-template-columns: 1fr; }
+    .task-item { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .task-badges { width: 100%; justify-content: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="./">
+      <img class="brand-logo" src="favicon.svg" width="24" height="24" alt="ArbFlow 图标">
+      <span class="brand-name">ArbFlow</span>
+      <span style="font-size:13px; font-weight:400; color:var(--muted); margin-left:4px;">仲裁全流程辅助</span>
+    </a>
+    <nav class="nav" aria-label="页面主导航">
+      <a href="#belief">理念</a>
+      <a href="#stages">阶段与待办</a>
+      <a href="#guards">校验护栏</a>
+      <a href="#roles">主体确认</a>
+      <a href="#tech">技术栈</a>
+      <a href="../#resolve">全部项目 ↗</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- 首屏 -->
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <div class="eyebrow">ONLINE DISPUTE RESOLUTION · ARBITRATION · GZAC 2026</div>
+        <h1>64 项工作流<span class="dot">·</span><br>四重校验人确认</h1>
+        <p class="lede">
+          仲裁是解纷光谱的终点——一锤定音、具有强制执行力。ArbFlow 依据《广州仲裁委员会仲裁规则（2026）》，将全流程解构为 10 个阶段、64 项工作流。程序能确定的绝不交由模型猜，需要模型起草与分析的必须经受四层反向校验，最终全部由有权的人确认。
+        </p>
+        <div class="creed" aria-label="ArbFlow 四项铁律">
+          <span><b>01</b> 纯程序算时限</span>
+          <span><b>02</b> 智能体带工具</span>
+          <span><b>03</b> 四重防幻觉护栏</span>
+          <span><b>04</b> 权责分立人工确认</span>
+        </div>
+        <div class="cta">
+          <a class="btn btn-ink" href="#stages">探索 10 个阶段 64 项工作流 ↓</a>
+          <a class="btn btn-line" href="#guards">查看四重校验护栏 →</a>
+        </div>
+      </div>
+
+      <div class="hero-fig">
+        <svg viewBox="0 0 460 380" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- 背景底座网格 -->
+          <rect x="20" y="20" width="420" height="340" rx="8" fill="#ffffff" stroke="#e7e4dd" stroke-width="1"/>
+          
+          <!-- 轨道流转线 -->
+          <path d="M 60 70 L 400 70" stroke="#e7e4dd" stroke-width="2"/>
+          <path class="track-glow" d="M 60 70 L 260 70" stroke="#1b2c74" stroke-width="2" stroke-linecap="round"/>
+          
+          <!-- 阶段节点 -->
+          <circle cx="60" cy="70" r="7" fill="#1b2c74"/>
+          <text x="60" y="94" font-family="JetBrains Mono" font-size="10" fill="#1b2c74" text-anchor="middle" font-weight="700">S0</text>
+          
+          <circle cx="128" cy="70" r="7" fill="#1b2c74"/>
+          <text x="128" y="94" font-family="JetBrains Mono" font-size="10" fill="#1b2c74" text-anchor="middle" font-weight="700">S1</text>
+          
+          <circle cx="196" cy="70" r="7" fill="#1b2c74"/>
+          <text x="196" y="94" font-family="JetBrains Mono" font-size="10" fill="#1b2c74" text-anchor="middle" font-weight="700">S2</text>
+          
+          <circle cx="264" cy="70" r="8" fill="#c9b37e" stroke="#1b2c74" stroke-width="2"/>
+          <text x="264" y="94" font-family="JetBrains Mono" font-size="10" fill="#9d844e" text-anchor="middle" font-weight="700">S4</text>
+          
+          <circle cx="332" cy="70" r="6" fill="#ffffff" stroke="#738ca5" stroke-width="2"/>
+          <text x="332" y="94" font-family="JetBrains Mono" font-size="10" fill="#8a8a8a" text-anchor="middle">S7</text>
+          
+          <circle cx="400" cy="70" r="6" fill="#ffffff" stroke="#738ca5" stroke-width="2"/>
+          <text x="400" y="94" font-family="JetBrains Mono" font-size="10" fill="#8a8a8a" text-anchor="middle">S9</text>
+
+          <!-- 四层校验护栏卡片 -->
+          <g class="guard-shield">
+            <rect x="50" y="120" width="360" height="135" rx="6" fill="#fbfaf7" stroke="#e7e4dd"/>
+            <rect x="50" y="120" width="360" height="30" rx="6 6 0 0" fill="#1b2c74"/>
+            <text x="66" y="140" font-family="Noto Sans SC" font-size="12" fill="#ffffff" font-weight="700">四重程序校验护栏 · 防幻觉与出处溯源</text>
+
+            <rect x="66" y="162" width="70" height="24" rx="4" fill="#ffffff" stroke="#c9b37e"/>
+            <text x="101" y="178" font-family="Noto Sans SC" font-size="11" fill="#1b2c74" text-anchor="middle">① 出处对齐</text>
+
+            <rect x="146" y="162" width="70" height="24" rx="4" fill="#ffffff" stroke="#c9b37e"/>
+            <text x="181" y="178" font-family="Noto Sans SC" font-size="11" fill="#1b2c74" text-anchor="middle">② 数值溯源</text>
+
+            <rect x="226" y="162" width="70" height="24" rx="4" fill="#ffffff" stroke="#c9b37e"/>
+            <text x="261" y="178" font-family="Noto Sans SC" font-size="11" fill="#1b2c74" text-anchor="middle">③ 规则比对</text>
+
+            <rect x="306" y="162" width="88" height="24" rx="4" fill="#ffffff" stroke="#c9b37e"/>
+            <text x="350" y="178" font-family="Noto Sans SC" font-size="11" fill="#1b2c74" text-anchor="middle">④ 请求防漏裁</text>
+
+            <text x="66" y="214" font-family="JetBrains Mono" font-size="11" fill="#1b2c74">VERIFY: [段4] 协议第12条第4款 · 顺延至2026-11-20</text>
+            <text x="66" y="235" font-family="JetBrains Mono" font-size="11" fill="#2b6cb0">STATUS: 4/4 校验通过 · 待仲裁庭人工确认</text>
+          </g>
+
+          <!-- 印章与人工决策 -->
+          <g>
+            <rect x="50" y="275" width="220" height="65" rx="6" fill="#fbfaf7" stroke="#e7e4dd"/>
+            <text x="66" y="298" font-family="Noto Sans SC" font-size="12" fill="#141414" font-weight="700">权责分立确认中枢</text>
+            <text x="66" y="322" font-family="Noto Sans SC" font-size="11" fill="#5c5c5c">秘书核阅 → 仲裁庭合议 → 主任指定</text>
+          </g>
+          
+          <g class="seal-spin">
+            <circle cx="350" cy="308" r="32" fill="#ffffff" stroke="#c9b37e" stroke-width="2"/>
+            <circle cx="350" cy="308" r="28" fill="#fbf7ee"/>
+            <text x="350" y="304" font-family="Noto Serif SC" font-size="12" fill="#1b2c74" text-anchor="middle" font-weight="900">广州仲裁</text>
+            <text x="350" y="320" font-family="Noto Sans SC" font-size="10" fill="#9d844e" text-anchor="middle">2026 实践</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- 01 理念 -->
+  <section class="belief" id="belief">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-no">01 / 理念</div>
+        <div>
+          <h2>不猜时限、不造事实、不代裁判</h2>
+          <p>
+            仲裁文书直接关乎当事人重大财产处分，一旦出现虚构法条、错算期间或漏审请求，将直接引发司法撤裁或不予执行风险。ArbFlow 从根本上抛弃“端到端直接生成裁决书”的虚浮做法。
+          </p>
+        </div>
+      </div>
+
+      <div class="contrast reveal">
+        <div class="old">
+          <div class="k">传统大模型生成</div>
+          <div class="v">
+            直接投喂卷宗，一键让模型生成整份裁决书。表面文辞通顺，实则法条编号虚构、事实段落张冠李戴、期限算错一天即遭撤销。
+          </div>
+        </div>
+        <div>
+          <div class="k">ArbFlow 示范实践</div>
+          <div class="v">
+            程序能算的<em>纯代码计算</em>；模型起草的<em>逐段出处锁定</em>；四重校验拦截任何幻觉；最终结果<em>全部由有权的人逐项确认</em>。
+          </div>
+        </div>
+      </div>
+
+      <div class="creed-cards reveal">
+        <div class="creed-card">
+          <div class="num">01 / 纯程序确定性</div>
+          <h3>A 类待办零模型调用</h3>
+          <p>起算日、工作日顺延、选定期限、仲裁费用测算等确定性程序，全部由纯程序算法精准复核，杜绝大模型推断日期。</p>
+        </div>
+        <div class="creed-card">
+          <div class="num">02 / 工具沙箱隔离</div>
+          <h3>智能体按段受控阅读</h3>
+          <p>智能体步骤仅开放只读工具（分段阅卷、条文查阅、法定期限），禁止自由发散，抽取结论必须回注材料精确段号。</p>
+        </div>
+        <div class="creed-card">
+          <div class="num">03 / 阻断性校验器</div>
+          <h3>四重护栏拦截留痕</h3>
+          <p>出处缺失剔除、金额与日期溯源、规则条文比对、请求防漏裁。拦截结果直接记入审计日志，失败副本绝不落库。</p>
+        </div>
+        <div class="creed-card">
+          <div class="num">04 / 权责边界明确</div>
+          <h3>四级主体人工确认</h3>
+          <p>工作流在建议形成后必然暂停。仲裁秘书、仲裁庭、部门负责人、委员会主任在法定权限内各自确认，系统绝不代行权力。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 阶段与 64 项工作流 -->
+  <section id="stages">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-no">02 / 全流程覆盖</div>
+        <div>
+          <h2>10 个程序阶段 · 64 项标准工作流</h2>
+          <p>
+            从当事人申请准备，到立案、送达、组庭、审理、合议、核阅直至裁后程序，依据 2026 规则细化为 64 条可编排的工作流。点击下方阶段标签，查看各阶段的具体待办与行权主体。
+          </p>
+        </div>
+      </div>
+
+      <div class="stages-browser reveal">
+        <div class="stage-nav" role="tablist" aria-label="仲裁程序阶段选择">
+          <button class="stage-tab active" role="tab" aria-selected="true" data-stage="S0"><span class="tag">S0</span>申请准备</button>
+          <button class="stage-tab" role="tab" aria-selected="false" data-stage="S1"><span class="tag">S1</span>立案审查</button>
+          <button class="stage-tab" role="tab" aria-selected="false" data-stage="S2"><span class="tag">S2</span>受理与通知</button>
+          <button class="stage-tab" role="tab" aria-selected="false" data-stage="S3"><span class="tag">S3</span>答辩与举证</button>
+          <button class="stage-tab" role="tab" aria-selected="false" data-stage="S4"><span class="tag">S4</span>组庭与回避</button>
+          <button class="stage-tab" role="tab" aria-selected="false" data-stage="S5"><span class="tag">S5</span>审前准备</button>
+          <button class="stage-tab" role="tab" aria-selected="false" data-stage="S6"><span class="tag">S6</span>庭审</button>
+          <button class="stage-tab" role="tab" aria-selected="false" data-stage="S7"><span class="tag">S7</span>合议与裁决</button>
+          <button class="stage-tab" role="tab" aria-selected="false" data-stage="S8"><span class="tag">S8</span>核阅与送达</button>
+          <button class="stage-tab" role="tab" aria-selected="false" data-stage="S9"><span class="tag">S9</span>裁决后程序</button>
+        </div>
+
+        <div class="stage-detail">
+          <div class="stage-meta">
+            <span class="badge-side" id="stageSide">当事人端辅助</span>
+            <h3 id="stageTitle">S0 申请准备</h3>
+            <p id="stageNote">程序自受理之日开始（第19条第3款），S0 尚不属本会案件程序，系统以「当事人端」模式辅助，不进入案件状态机。</p>
+            <div class="meta-item">
+              <b>准出条件 (Exit Criteria)</b>
+              <span id="stageExit">申请材料齐备，提交仲裁申请</span>
+            </div>
+            <div class="meta-item">
+              <b>行权主体</b>
+              <span id="stageWho">当事人 / 代理人</span>
+            </div>
+          </div>
+
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+              <span style="font-size:13px; font-weight:700; color:var(--ink);">阶段工作流清单 (<span id="taskCount">4</span> 项)</span>
+              <span style="font-size:12px; color:var(--faint);">标准工作流模板驱动</span>
+            </div>
+            <div class="task-list" id="taskListContainer">
+              <!-- JS 动态注入 -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 四重校验护栏 -->
+  <section class="guard-sec" id="guards" style="background: #f4f2ec;">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-no">03 / 校验护栏</div>
+        <div>
+          <h2>四重防幻觉拦截网</h2>
+          <p>
+            大模型生成的内容在 ArbFlow 中只能作为“未决草稿”。任何建议进入人工决策界面之前，必须依次通过四层独立的程序校验器。
+          </p>
+        </div>
+      </div>
+
+      <div class="guards-grid reveal">
+        <div class="guard-card">
+          <div class="guard-num">GUARD 01 / GROUNDING VERIFIER</div>
+          <h3>材料出处比对与段号回溯</h3>
+          <p>
+            智能体分析输出的所有事实结论，必须标注材料段号出处（如 `[段3]`）。校验器自动将模型摘录与在案原文比对，凡未读到、对不上原文或虚构出处的，直接予以剔除。若全部结论均无据可循，整项待办 422 拦截。
+          </p>
+          <div class="guard-rule">
+            <b>校验逻辑：</b>原文命中率 &gt;= 80% 且段号有效；无据事实强制剥离，绝不混入裁判文书草稿。
+          </div>
+        </div>
+
+        <div class="guard-card">
+          <div class="guard-num">GUARD 02 / VALUE &amp; PROVENANCE</div>
+          <h3>数值与日期严格溯源</h3>
+          <p>
+            严禁模型推断生效日期、答辩截止日或利息数额。所有期间计算统一调用内置日历引擎，严格遵循《广州仲裁规则》第 54 条顺延规则（遇周六、周日及法定节假日顺延至下一个工作日）。模型自拟日期直接拦截。
+          </p>
+          <div class="guard-rule">
+            <b>校验逻辑：</b>日期、金额、期间须来自材料原文、程序参数或系统日期计算；自创推算一律阻断。
+          </div>
+        </div>
+
+        <div class="guard-card">
+          <div class="guard-num">GUARD 03 / ARTICLE CONFORMITY</div>
+          <h3>2026 规则条文反向核对</h3>
+          <p>
+            系统内置《广州仲裁委员会仲裁规则（2026）》及相关专门规则全库。模型在生成程序通知、审查意见或核阅建议时引用的每一条规则条号，均执行 block 级反向核验，引用未经知识库授权条文的立即阻断并审计留痕。
+          </p>
+          <div class="guard-rule">
+            <b>校验逻辑：</b>引用依据范围白名单校验；材料中未出现、知识库亦无记载的虚构条文直接拦截。
+          </div>
+        </div>
+
+        <div class="guard-card">
+          <div class="guard-num">GUARD 04 / STRUCTURAL INTEGRITY</div>
+          <h3>裁决书结构规范与防漏裁</h3>
+          <p>
+            针对 S7/S8 裁决文书，解析开头、仲裁请求、事实认定、仲裁庭意见与裁决主文五个组成部分。程序逐项核对申请人各项仲裁请求是否均在主文中得到回应，防止遗漏请求（漏裁）或超出约定仲裁事项（越权）。
+          </p>
+          <div class="guard-rule">
+            <b>校验逻辑：</b>裁决主文与申请人仲裁请求集合逐项比对；未决请求强提示，杜绝瑕疵裁决出库。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 主体确认机制 -->
+  <section id="roles">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-no">04 / 权责分立</div>
+        <div>
+          <h2>有权的人确认，系统绝不代行决策</h2>
+          <p>
+            依据仲裁法与仲裁规则，程序权限在秘书、仲裁庭、部门负责人与主任之间严格分立。工作流在每个决策节点设卡（Gate），只有法定有权主体登录后方可点击确认或登记实施。
+          </p>
+        </div>
+      </div>
+
+      <div class="roles-grid reveal">
+        <div class="role-card">
+          <div class="role-top">
+            <span class="role-title">仲裁秘书</span>
+            <span class="role-tag" style="background:var(--navy-light); color:var(--navy);">办案中枢</span>
+          </div>
+          <p>负责立案材料初审、程序路由建议、送达排期管理、证据交换组织以及裁决书草案的程序性核阅比对。</p>
+          <div class="role-acts">
+            <b>核心行权环节</b>
+            S1 初审 · S2 送达排期 · S5 证据交换 · S8 裁决初审核阅
+          </div>
+        </div>
+
+        <div class="role-card">
+          <div class="role-top">
+            <span class="role-title">仲裁庭</span>
+            <span class="role-tag" style="background:#e4edf4; color:#2b6cb0;">裁判核心</span>
+          </div>
+          <p>独立行使仲裁裁决权。确认审理争点、主持庭审调查与辩论、组织当事人合议、起草仲裁庭意见并签署最终裁决文书。</p>
+          <div class="role-acts">
+            <b>核心行权环节</b>
+            S3 异议决定 · S6 庭审主持 · S7 合议裁决 · S8 签署裁决书
+          </div>
+        </div>
+
+        <div class="role-card">
+          <div class="role-top">
+            <span class="role-title">部门负责人</span>
+            <span class="role-tag" style="background:#f3e8ff; color:#7e22ce;">监督复核</span>
+          </div>
+          <p>对程序重大事项进行审批把关。审核仲裁费用缓交申请、裁决核阅意见二次把关，确保程序合规公正。</p>
+          <div class="role-acts">
+            <b>核心行权环节</b>
+            S1-04 费用缓交审批 · S8-03 部门核阅把关
+          </div>
+        </div>
+
+        <div class="role-card">
+          <div class="role-top">
+            <span class="role-title">委员会主任</span>
+            <span class="role-tag" style="background:#fee2e2; color:#b91c1c;">法定权责</span>
+          </div>
+          <p>依法行使主任指定权。在当事人未共同选定首席/独任仲裁员时，经画像分析从推荐名单或依职权指定仲裁员，决定管辖权异议。</p>
+          <div class="role-acts">
+            <b>核心行权环节</b>
+            S4-03 主任指定仲裁员 · S7-06 裁决期限重大延长
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 技术架构 -->
+  <section id="tech" style="padding-top: 0;">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-no">05 / 技术实现</div>
+        <div>
+          <h2>本地优先、数据隔离与事务安全</h2>
+          <p>
+            商事仲裁案件卷宗具有极高保密性。系统在设计上坚持“数据不出域、状态机事务隔离、全链路留痕可溯”。
+          </p>
+        </div>
+      </div>
+
+      <div class="tech-box reveal">
+        <div style="border-bottom: 1px solid var(--line); padding-bottom: 20px;">
+          <h3 style="font-family:var(--serif); font-size:22px; color:var(--ink); margin:0 0 10px;">纯私有化与确定性技术架构</h3>
+          <p style="font-size:14.5px; color:var(--muted); margin:0; line-height:1.7;">
+            后端基于 Fastify 与 Better-SQLite3 单库架构，所有工作流试跑均基于内存副本（In-memory clone）执行，校验失败立即丢弃，成功且经人工确认后单事务提交，彻底杜绝数据污染。
+          </p>
+        </div>
+
+        <div class="tech-grid">
+          <div class="tech-item">
+            <span class="mono-tag">LOCAL-FIRST EMBEDDING</span>
+            <h4>本地化向量检索与重排</h4>
+            <p>基于 ChromaDB，内嵌 BAAI/bge-small-zh-v1.5 与 bge-reranker 本地模型。案卷材料仅在本地分词与向量化，绝不上传至任何公网第三方。</p>
+          </div>
+
+          <div class="tech-item">
+            <span class="mono-tag">ACID STATE MACHINE</span>
+            <h4>状态机副本事务机制</h4>
+            <p>工作流运行与人工决策全程 ACID 事务保护。旧版本并发修改由 409 乐观锁拦截，审计日志与操作轨迹全时空留痕。</p>
+          </div>
+
+          <div class="tech-item">
+            <span class="mono-tag">DAEMON INTEGRATION</span>
+            <h4>launchd 守护与单端口部署</h4>
+            <p>Node 22 + Fastify 单端口同源托管 API 与 Vite 前端 SPA。由 macOS launchd 系统级托管守护，崩溃自动拉起，登录开机自启。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <span style="font-weight:700; color:var(--ink);">grithoni · 项目展示</span>
+      <span style="margin: 0 10px; color:var(--line);">|</span>
+      <span>各项目源码不公开；展示页中的人名、案号、金额均为演示示例。</span>
+    </div>
+    <div class="footer-links">
+      <a href="../medflow/">MedFlow (调解)</a>
+      <a href="../neflow/">NeFlow (中立评估)</a>
+      <a href="../drbflow/">DrbFlow (争议评审)</a>
+      <a href="./" style="color:var(--navy); font-weight:700;">ArbFlow (仲裁)</a>
+      <a href="../#resolve">全部解纷项目 ↗</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // 10 阶段与 64 项工作流权威数据（来源：ArbFlow 核心规则库）
+  const STAGES_DATA = {
+    S0: {
+      id: 'S0',
+      name: '申请准备',
+      side: '当事人端辅助',
+      who: '当事人 / 代理人',
+      note: '程序自受理之日开始（第19条第3款），S0 尚不属本会案件程序，系统以「当事人端」模式辅助，不进入案件状态机。',
+      exit: '申请材料齐备，提交仲裁申请',
+      tasks: [
+        { id: 'S0-01', name: '仲裁协议识别与管辖初判', tpl: 'T7 分析起草型', actor: '当事人', rule: '第14–16条' },
+        { id: 'S0-02', name: '仲裁请求、事实与理由结构化；申请书自查', tpl: 'T7 分析起草型', actor: '当事人', rule: '第18条' },
+        { id: 'S0-03', name: '证据分类编订、序号页码与证据目录清单', tpl: 'T7 分析起草型', actor: '当事人', rule: '第18、41条' },
+        { id: 'S0-04', name: '仲裁前保全（情况紧急时向法院申请）', tpl: 'T7 分析起草型', actor: '当事人→法院', rule: '第29条' }
+      ]
+    },
+    S1: {
+      id: 'S1',
+      name: '立案审查',
+      side: '本会端处理',
+      who: '仲裁委员会（仲裁秘书初审）',
+      note: '紧急仲裁员申请（组庭前临时措施）在 S1–S4 均可能出现，这四个阶段都须能受理与转交。',
+      exit: '作出受理或不予受理决定；预交费用完成；程序类型已判定',
+      tasks: [
+        { id: 'S1-01', name: '材料完整性核查；不齐则限期补正', tpl: 'T1 材料审查型', actor: '仲裁秘书', rule: '第18、19条' },
+        { id: 'S1-02', name: '受案范围审查（第3条第2款排除情形）', tpl: 'T7 分析起草型', actor: '仲裁秘书', rule: '第3条' },
+        { id: 'S1-03', name: '仲裁协议效力与管辖复核', tpl: 'T7 分析起草型', actor: '仲裁秘书', rule: '第14–17条' },
+        { id: 'S1-04', name: '预交仲裁费用核验；缓交申请审批', tpl: 'T5 计算型', actor: '部门负责人', rule: '第19、132条' },
+        { id: 'S1-05', name: '代理人授权委托与保证书核验', tpl: 'T1 材料审查型', actor: '仲裁秘书', rule: '第30、31条' },
+        { id: 'S1-06', name: '程序路由判定（简易/互联网/涉外规则）', tpl: 'T5 计算型', actor: '程序路由器', rule: '第92、98条' },
+        { id: 'S1-07', name: '引导当事人选择多元解纷（组庭前调解）', tpl: 'T4 申请决定型', actor: '仲裁秘书', rule: '第19、58条' },
+        { id: 'S1-08', name: '紧急仲裁员/保全申请受理与法院转交', tpl: 'T4 申请决定型', actor: '仲裁秘书', rule: '第29、117条' }
+      ]
+    },
+    S2: {
+      id: 'S2',
+      name: '受理与通知',
+      side: '本会端送达',
+      who: '本会（仲裁秘书排期）',
+      note: '文书生成与送达、期限起算分为两个动作：先生成文书，再送达并起算期限。',
+      exit: '受理通知与仲裁通知均已送达，答辩、举证、选定仲裁员等期限已起算',
+      tasks: [
+        { id: 'S2-01', name: '受理通知生成（连同规则、仲裁员名册）', tpl: 'T3 文书生成型', actor: '仲裁秘书', rule: '第19条' },
+        { id: 'S2-02', name: '受理通知送达申请人；电子送达地址确认', tpl: 'T3 文书生成型', actor: '仲裁秘书', rule: '第19、55条' },
+        { id: 'S2-03', name: '仲裁通知及申请材料生成并送达被申请人', tpl: 'T3 文书生成型', actor: '仲裁秘书', rule: '第21条' },
+        { id: 'S2-04', name: '申请人申请延后送达的审查', tpl: 'T4 申请决定型', actor: '仲裁秘书', rule: '第21条' },
+        { id: 'S2-05', name: '答辩、举证、选定期起算与日历生成', tpl: 'T2 期限监控型', actor: '纯程序计算', rule: '第22、33、54条' }
+      ]
+    },
+    S3: {
+      id: 'S3',
+      name: '答辩与举证',
+      side: '本会 / 仲裁庭',
+      who: '当事人交互 · 仲裁秘书流转',
+      note: 'S4 组庭按办案实践在完整选定期届满后启动，可与本阶段并行；未答辩不阻断程序推进。',
+      exit: '答辩/反请求期届满；举证期届满或已处理延长申请；证据已交换',
+      tasks: [
+        { id: 'S3-01', name: '答辩书收转：收到后 5 日内转发申请人', tpl: 'T2 期限监控型', actor: '仲裁秘书', rule: '第22条' },
+        { id: 'S3-02', name: '反请求的受理审查与反请求答辩', tpl: 'T4 申请决定型', actor: '仲裁秘书', rule: '第23条' },
+        { id: 'S3-03', name: '变更仲裁请求/反请求（逾期受理决定）', tpl: 'T4 申请决定型', actor: '仲裁庭', rule: '第25条' },
+        { id: 'S3-04', name: '多份合同、多方当事人、案外人加入流转', tpl: 'T4 申请决定型', actor: '仲裁秘书', rule: '第26–28条' },
+        { id: 'S3-05', name: '管辖权异议初审（首次开庭前书面提出）', tpl: 'T1 材料审查型', actor: '仲裁委员会', rule: '第14–17条' },
+        { id: 'S3-06', name: '举证期限管理；延长举证申请审查', tpl: 'T2 期限监控型', actor: '仲裁庭', rule: '第41条' },
+        { id: 'S3-07', name: '证据交换：将证据材料送达对方当事人', tpl: 'T3 文书生成型', actor: '仲裁秘书', rule: '第41条' },
+        { id: 'S3-08', name: '第三方资助披露登记', tpl: 'T8 登记归档型', actor: '仲裁秘书', rule: '第32条' }
+      ]
+    },
+    S4: {
+      id: 'S4',
+      name: '组庭与回避',
+      side: '本会 / 仲裁庭',
+      who: '当事人选定 / 主任指定',
+      note: '由主任指定仲裁员时，评价推荐微服务结合专业特长与历史履约画像提供候选。',
+      exit: '仲裁庭组成完毕，披露声明已转交，无未决回避申请，组庭通知已送达',
+      tasks: [
+        { id: 'S4-01', name: '仲裁庭人数判定（约定/默认/争议金额）', tpl: 'T5 计算型', actor: '纯程序判定', rule: '第33、93条' },
+        { id: 'S4-02', name: '各方选定或委托主任指定仲裁员', tpl: 'T2 期限监控型', actor: '仲裁秘书', rule: '第34条' },
+        { id: 'S4-03', name: '首席/独任共同选定；未成时主任指定/推荐', tpl: 'T4 申请决定型', actor: '委员会主任', rule: '第34条' },
+        { id: 'S4-04', name: '披露声明管理与利益冲突反向比对', tpl: 'T6 比对校验型', actor: '仲裁秘书', rule: '第36条' },
+        { id: 'S4-05', name: '回避申请：时限监控与主任决定建议', tpl: 'T4 申请决定型', actor: '委员会主任', rule: '第37、38条' },
+        { id: 'S4-06', name: '组庭通知生成与向双方发出', tpl: 'T3 文书生成型', actor: '仲裁秘书', rule: '第35条' }
+      ]
+    },
+    S5: {
+      id: 'S5',
+      name: '审前准备',
+      side: '仲裁庭端',
+      who: '仲裁庭主导',
+      note: '普通程序开庭前 20 日发出通知；简易程序开庭前 10 日通知；期日前必须完成准备。',
+      exit: '开庭通知已送达双方；证据原件已核对；审理范围已明确',
+      tasks: [
+        { id: 'S5-01', name: '确定审理方式（开庭/线上/书面审理）', tpl: 'T4 申请决定型', actor: '仲裁庭', rule: '第40条' },
+        { id: 'S5-02', name: '程序令、审理日程表、审理范围书拟定', tpl: 'T7 分析起草型', actor: '仲裁庭', rule: '第40条' },
+        { id: 'S5-03', name: '庭前质证组织与补充证据指引', tpl: 'T7 分析起草型', actor: '仲裁庭', rule: '第41条' },
+        { id: 'S5-04', name: '电子数据审查与证据原件核对', tpl: 'T6 比对校验型', actor: '仲裁庭', rule: '第42条' },
+        { id: 'S5-05', name: '协助调查函、书证提出命令、鉴定与专家意见', tpl: 'T4 申请决定型', actor: '仲裁庭', rule: '第43–46条' },
+        { id: 'S5-06', name: '早期驳回申请的受理与 30 日内决定', tpl: 'T4 申请决定型', actor: '仲裁庭', rule: '第52条' },
+        { id: 'S5-07', name: '合并开庭/合并仲裁条件审查', tpl: 'T4 申请决定型', actor: '仲裁庭', rule: '第48、49条' },
+        { id: 'S5-08', name: '开庭通知生成与发出；延期申请审查', tpl: 'T3 文书生成型', actor: '仲裁秘书', rule: '第47条' }
+      ]
+    },
+    S6: {
+      id: 'S6',
+      name: '庭审',
+      side: '仲裁庭端',
+      who: '仲裁庭主持',
+      note: '庭中调解必须严格执行陈述隔离，当事人让步陈述不得在裁决书中作为不利依据。',
+      exit: '庭审调查、辩论与最后陈述结束；庭审笔录已由各方校阅签字',
+      tasks: [
+        { id: 'S6-01', name: '身份确认（现场核验证件或生物识别）', tpl: 'T1 材料审查型', actor: '仲裁秘书', rule: '第69条' },
+        { id: 'S6-02', name: '庭审调查：流程提示与事实调查清单', tpl: 'T7 分析起草型', actor: '仲裁庭', rule: '第71条' },
+        { id: 'S6-03', name: '质证记录与证据证明力状态标注', tpl: 'T7 分析起草型', actor: '仲裁庭', rule: '第50、51条' },
+        { id: 'S6-04', name: '法庭辩论与最后陈述归纳', tpl: 'T7 分析起草型', actor: '仲裁庭', rule: '第72条' },
+        { id: 'S6-05', name: '庭审笔录或同步音视频档案登记', tpl: 'T8 登记归档型', actor: '仲裁秘书', rule: '第73条' },
+        { id: 'S6-06', name: '庭中调解（陈述隔离，成功则出调解书）', tpl: 'T7 分析起草型', actor: '仲裁庭', rule: '第59–62条' },
+        { id: 'S6-07', name: '虚假仲裁筛查与涉嫌犯罪线索移送', tpl: 'T6 比对校验型', actor: '仲裁庭→本会', rule: '第79条' },
+        { id: 'S6-08', name: '缺席审理与违反庭审纪律处理', tpl: 'T4 申请决定型', actor: '仲裁庭', rule: '第70、74条' }
+      ]
+    },
+    S7: {
+      id: 'S7',
+      name: '合议与裁决',
+      side: '仲裁庭端',
+      who: '仲裁庭合议',
+      note: '合议本身是仲裁庭人工审议行为，系统整理裁判争点与主文要素，杜绝替代审理。',
+      exit: '裁决书草案形成并提交核阅；裁决主文完整覆盖当事人全部请求',
+      tasks: [
+        { id: 'S7-01', name: '争点归纳、事实认定与裁判理由支持', tpl: 'T7 分析起草型', actor: '仲裁庭', rule: '第82条' },
+        { id: 'S7-02', name: '合议笔录整理（多数意见与不同意见留存）', tpl: 'T8 登记归档型', actor: '仲裁庭', rule: '第82条' },
+        { id: 'S7-03', name: '先行裁决（争议事实已清楚的部分）', tpl: 'T7 分析起草型', actor: '仲裁庭', rule: '第85条' },
+        { id: 'S7-04', name: '仲裁费用与其他实际费用承担测算', tpl: 'T5 计算型', actor: '纯程序测算', rule: '第88条' },
+        { id: 'S7-05', name: '专家咨询会意见（重大疑难案件）', tpl: 'T4 申请决定型', actor: '主任批准', rule: '第80、84条' },
+        { id: 'S7-06', name: '裁决期限监控；特殊情况延长申请', tpl: 'T2 期限监控型', actor: '委员会主任', rule: '第84、97条' },
+        { id: 'S7-07', name: '裁决书初稿生成与完整要素校验', tpl: 'T3 文书生成型', actor: '仲裁庭', rule: '第82条' }
+      ]
+    },
+    S8: {
+      id: 'S8',
+      name: '核阅与送达',
+      side: '本会 + 仲裁庭',
+      who: '仲裁秘书核阅 · 仲裁员签字',
+      note: '核阅意见仅作形式与一致性提示，最终裁决内容仍由仲裁庭独立作出。',
+      exit: '结案文书送达完毕，裁决书自作出之日起发生法律效力（第87条）',
+      tasks: [
+        { id: 'S8-01', name: '结案文书草案与卷宗一致性校验比对', tpl: 'T6 比对校验型', actor: '仲裁秘书', rule: '第83条' },
+        { id: 'S8-02', name: '核阅意见整理并提示仲裁庭', tpl: 'T7 分析起草型', actor: '仲裁秘书', rule: '第83条' },
+        { id: 'S8-03', name: '部门负责人核阅把关', tpl: 'T8 登记归档型', actor: '部门负责人', rule: '第83条' },
+        { id: 'S8-04', name: '仲裁员实体或电子签名，加盖公章', tpl: 'T8 登记归档型', actor: '仲裁员/本会', rule: '第82、108条' },
+        { id: 'S8-05', name: '送达当事人（优先电子送达）与时间认定', tpl: 'T3 文书生成型', actor: '仲裁秘书', rule: '第55–57条' }
+      ]
+    },
+    S9: {
+      id: 'S9',
+      name: '裁决后程序',
+      side: '本会 / 法院',
+      who: '本会归档 · 法院衔接',
+      note: '重新仲裁按法院通知启动，原仲裁庭决定审理范围，不固定退回某一阶段。',
+      exit: '卷宗材料齐备可归档；履行跟踪与裁后事件独立记入留痕审计',
+      tasks: [
+        { id: 'S9-01', name: '履行跟踪与执行指引；协助申请强制执行', tpl: 'T7 分析起草型', actor: '当事人→法院', rule: '第87条' },
+        { id: 'S9-02', name: '补正或补充裁决（收到后 30 日内）', tpl: 'T4 申请决定型', actor: '原仲裁庭', rule: '第89条' },
+        { id: 'S9-03', name: '申请撤销裁决司法审查协助与时点提示', tpl: 'T7 分析起草型', actor: '人民法院', rule: '第90条' },
+        { id: 'S9-04', name: '重新仲裁流转（法院通知触发）', tpl: 'T4 申请决定型', actor: '原仲裁庭', rule: '第39、91条' },
+        { id: 'S9-05', name: '全案卷宗归档与防篡改审计留痕', tpl: 'T8 登记归档型', actor: '仲裁秘书', rule: '第10、130条' }
+      ]
+    }
+  };
+
+  // 阶段 Tab 交互
+  const stageTabs = document.querySelectorAll('.stage-tab');
+  const stageSide = document.getElementById('stageSide');
+  const stageTitle = document.getElementById('stageTitle');
+  const stageNote = document.getElementById('stageNote');
+  const stageExit = document.getElementById('stageExit');
+  const stageWho = document.getElementById('stageWho');
+  const taskCount = document.getElementById('taskCount');
+  const taskListContainer = document.getElementById('taskListContainer');
+
+  function selectStage(stageKey) {
+    const data = STAGES_DATA[stageKey];
+    if (!data) return;
+
+    stageTabs.forEach(tab => {
+      const isCur = tab.getAttribute('data-stage') === stageKey;
+      tab.classList.toggle('active', isCur);
+      tab.setAttribute('aria-selected', isCur ? 'true' : 'false');
+    });
+
+    stageSide.textContent = data.side;
+    stageTitle.textContent = `${data.id} ${data.name}`;
+    stageNote.textContent = data.note;
+    stageExit.textContent = data.exit;
+    stageWho.textContent = data.who;
+    taskCount.textContent = data.tasks.length;
+
+    taskListContainer.innerHTML = data.tasks.map(t => `
+      <div class="task-item">
+        <div class="task-info">
+          <span class="task-id">${t.id}</span>
+          <span class="task-name">${t.name}</span>
+        </div>
+        <div class="task-badges">
+          <span class="tpl-pill">${t.tpl}</span>
+          <span class="actor-pill">${t.actor}</span>
+          <span style="font-size:12px; font-family:var(--mono); color:var(--gold-deep);">${t.rule}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  stageTabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => {
+      selectStage(tab.getAttribute('data-stage'));
+    });
+
+    tab.addEventListener('keydown', (e) => {
+      let targetIndex = null;
+      if (e.key === 'ArrowRight') targetIndex = (index + 1) % stageTabs.length;
+      if (e.key === 'ArrowLeft') targetIndex = (index - 1 + stageTabs.length) % stageTabs.length;
+      if (e.key === 'Home') targetIndex = 0;
+      if (e.key === 'End') targetIndex = stageTabs.length - 1;
+
+      if (targetIndex !== null) {
+        e.preventDefault();
+        stageTabs[targetIndex].focus();
+        selectStage(stageTabs[targetIndex].getAttribute('data-stage'));
+      }
+    });
+  });
+
+  // 初始化第一阶段
+  selectStage('S0');
+
+  // 顶栏滚动阴影
+  window.addEventListener('scroll', () => {
+    const topBar = document.querySelector('.top');
+    if (window.scrollY > 20) {
+      topBar.classList.add('scrolled');
+    } else {
+      topBar.classList.remove('scrolled');
+    }
+  }, { passive: true });
+
+  // 滚动渐入
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      }
+    });
+  }, { rootMargin: '0px 0px -6% 0px' });
+
+  document.documentElement.classList.add('js');
+  document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+</script>
+</body>
+</html>
